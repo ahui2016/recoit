@@ -34,7 +34,7 @@
             <div class="form-group row" id="thumbnail" style="display: none;">
               <label for="file-size" class="col-sm-2 col-form-label">Thumbnail</label>
               <div class="col-sm-10">
-                <canvas class="img-thumbnail "></canvas>
+                <canvas class="img-thumbnail"></canvas>
               </div>
             </div>
 
@@ -67,6 +67,7 @@
 const thumbWidth = 128, thumbHeight = 128;
 
 let addedTags = [];
+let fileSha256;
 
 $('#file-input').change(event => {
   let file = event.target.files[0];
@@ -78,6 +79,7 @@ $('#file-input').change(event => {
     $('#hidden-fields').show();
 
     tryToDrawThumb(file);
+    sha256Hex(file).then(hashHex => fileSha256 = hashHex);
 
     $('#file-size').val(fileSizeToString(file.size));
     $('#file-name').val(file.name);
@@ -156,6 +158,14 @@ function drawThumb(src, file) {
     };
     img.onerror = reject;
   });
+}
+
+async function sha256Hex(file) {
+  let buffer = await file.arrayBuffer();
+  const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  return hashHex;
 }
 
     </script>
