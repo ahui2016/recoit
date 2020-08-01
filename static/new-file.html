@@ -160,6 +160,7 @@ function drawThumb(src, file) {
   });
 }
 
+// https://developer.mozilla.org/en-US/docs/Web/API/SubtleCrypto/digest
 async function sha256Hex(file) {
   let buffer = await file.arrayBuffer();
   const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
