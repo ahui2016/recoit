@@ -6,14 +6,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 
     <!-- Bootstrap CSS -->
-    <link rel="stylesheet" href="../public/bootstrap.min.css">
+    <link rel="stylesheet" href="/public/bootstrap.min.css">
 
     <title></title>
 
     <!-- Optional JavaScript -->
     <!-- jQuery first, then Popper.js, then Bootstrap JS -->
-    <script src="../public/jquery-3.5.1.min.js"></script>
-    <script src="../public/bootstrap.bundle.min.js"></script>
+    <script src="/public/jquery-3.5.1.min.js"></script>
+    <script src="/public/bootstrap.bundle.min.js"></script>
 
     <style></style>
 
@@ -167,6 +167,31 @@ async function sha256Hex(file) {
   const hashArray = Array.from(new Uint8Array(hashBuffer));
   const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
   return hashHex;
+}
+
+function ajaxChecksum(hashHex) {
+  let form = new FormData();
+  form.append('hashHex', hashHex);
+
+  let xhr = new XMLHttpRequest();
+  xhr.responseType = 'json';
+  xhr.open('POST', '/api/checksum');
+
+  xhr.onerror = function () {
+    window.alert('An error occurred during the transaction');
+  }
+  xhr.onload = function() {
+    if (xhr.status == 200) {
+      console.log('OK.');
+    } else {
+      console.log(`Error: ${xhr.status} ${xhr.statusText} ${xhr.responseText}`);
+    }
+  }
+  xhr.send(form);
+}
+
+function checkHashHex() {
+  ajaxChecksum(fileSha256);
 }
 
     </script>
