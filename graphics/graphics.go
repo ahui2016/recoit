@@ -11,6 +11,11 @@ import (
 	"golang.org/x/image/webp"
 )
 
+const (
+	imageSize = 128
+	quality   = 80
+)
+
 // Thumbnail create a thumbnail of imgFile, and encodes it to base64 string.
 func Thumbnail(imgFile string) (string, error) {
 	src, err := imaging.Open(imgFile, imaging.AutoOrientation(true))
@@ -26,9 +31,9 @@ func Thumbnail(imgFile string) (string, error) {
 	}
 	side := shortSide(src.Bounds())
 	src = imaging.CropCenter(src, side, side)
-	src = imaging.Resize(src, 96, 0, imaging.NearestNeighbor)
+	src = imaging.Resize(src, imageSize, 0, imaging.NearestNeighbor)
 	buf := new(bytes.Buffer)
-	err = jpeg.Encode(buf, src, &jpeg.Options{Quality: 80})
+	err = jpeg.Encode(buf, src, &jpeg.Options{Quality: quality})
 	blob := base64.StdEncoding.EncodeToString(buf.Bytes())
 	return blob, nil
 }

@@ -66,6 +66,15 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
+	if err := db.Init(&Reco{}); err != nil {
+		panic(err)
+	}
+	if err := db.Init(&Tag{}); err != nil {
+		panic(err)
+	}
+	if err := db.Init(&Collection{}); err != nil {
+		panic(err)
+	}
 	log.Print(dbPath)
 }
 

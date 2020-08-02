@@ -20,7 +20,21 @@
 
 
 
+## Tag 标签
+
+- 搜索多个标签相当于分别搜索单个标签然后取交集。
+
+
+
 ## demo
 
 - 只上传小图
 - Collection.Title 限定长度
+
+
+
+## Upload file
+
+- https://astaxie.gitbooks.io/build-web-application-with-golang/content/en/04.5.html
+- https://tutorialedge.net/golang/go-file-upload-tutorial/
+- https://medium.com/wesionary-team/file-uploading-in-go-44111404a506

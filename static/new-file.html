@@ -66,7 +66,7 @@
 
 const thumbWidth = 128, thumbHeight = 128;
 
-let addedTags = [];
+let fileTags = [];
 let fileSha256;
 
 $('#file-input').change(event => {
@@ -97,15 +97,15 @@ function fileSizeToString(fileSize) {
 // 自动在标签前加井号
 let tagsInput = $('#tags-input');
 tagsInput.blur(() => {
-  let tags = getAddedTags();
+  let tags = getFileTags();
   let tagsString = tags.map(x => '#' + x).join(' ');
   tagsInput.val(tagsString);
 });
 
-function getAddedTags() {
+function getFileTags() {
   let items = tagsInput.val().replace(/#/g, ' ').split(' ');
-  addedTags = items.filter(x => x.length > 0);
-  return addedTags;
+  fileTags = items.filter(x => x.length > 0);
+  return fileTags;
 }
 
 async function tryToDrawThumb(file) {
@@ -169,29 +169,46 @@ async function sha256Hex(file) {
   return hashHex;
 }
 
-function ajaxChecksum(hashHex) {
+function uploadFile() {
   let form = new FormData();
-  form.append('hashHex', hashHex);
+  let file = document.querySelector('#file-input').files[0];
+  form.append('file', file);
+  form.append('checksum', fileSha256);
+  form.append('file-name', $('#file-name').val());
+  form.append('file-size', file.size);
+  form.append('file-tags', JSON.stringify(fileTags));
 
+  ajaxPost(form, '/api/upload-file', function() {
+    if (this.status == 200) {
+      console.log('OK. File Uploaded.');
+    } else {
+      console.log(`Error: ${this.status} ${this.statusText} ${this.responseText}`);
+    }
+  });
+}
+
+function checkHashHex() {
+  let form = new FormData();
+  form.append('hashHex', fileSha256);
+  ajaxPost(form, '/api/checksum', function() {
+    if (this.status == 200) {
+      console.log('OK');
+    } else {
+      console.log(`Error: ${this.status} ${this.statusText} ${this.responseText}`);
+    }
+  });
+}
+
+function ajaxPost(form, url, onloadHandler) {
   let xhr = new XMLHttpRequest();
   xhr.responseType = 'json';
-  xhr.open('POST', '/api/checksum');
+  xhr.open('POST', url);
 
   xhr.onerror = function () {
     window.alert('An error occurred during the transaction');
   }
-  xhr.onload = function() {
-    if (xhr.status == 200) {
-      console.log('OK.');
-    } else {
-      console.log(`Error: ${xhr.status} ${xhr.statusText} ${xhr.responseText}`);
-    }
-  }
+  xhr.onload = onloadHandler;
   xhr.send(form);
-}
-
-function checkHashHex() {
-  ajaxChecksum(fileSha256);
 }
 
     </script>

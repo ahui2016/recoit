@@ -82,3 +82,20 @@ func Sha256Hex(data []byte) string {
 	sum := sha256.Sum256(data)
 	return hex.EncodeToString(sum[:])
 }
+
+func HasString(slice []string, item string) bool {
+	i := StringIndex(slice, item)
+	if i < 0 {
+		return false
+	}
+	return true
+}
+
+func StringIndex(slice []string, item string) int {
+	for i, v := range slice {
+		if v == item {
+			return i
+		}
+	}
+	return -1
+}

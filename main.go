@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -23,8 +22,8 @@ func main() {
 	http.Handle("/public/", http.StripPrefix("/public/", fs))
 
 	http.HandleFunc("/", homePage)
-	http.HandleFunc("/api/new-reco", newRecoHandler)
-	// http.HandleFunc("/api/upload", uploadHandler)
+	// http.HandleFunc("/api/new-reco", newRecoHandler)
+	http.HandleFunc("/api/upload-file", uploadHandler)
 	http.HandleFunc("/api/checksum", checksumHandler)
 
 	addr := "127.0.0.1:80"
@@ -45,12 +44,88 @@ func homePage(w http.ResponseWriter, r *http.Request) {
 }
 
 func uploadHandler(w http.ResponseWriter, r *http.Request) {
-	var maxBytes int64 = 1024 * 1024 // 1 MB
+	var maxBytes int64 = 1024 * 1024 * 10 // 10 MB
 	r.Body = http.MaxBytesReader(w, r.Body, maxBytes)
-	// reader, err := r.MultipartReader()
-	// if checkErr(w, err, 500) {
-	// 	return
-	// }
+
+	file, fileHeader, err := r.FormFile("file")
+	if checkErr(w, err, 500) {
+		return
+	}
+	defer file.Close()
+
+	// 将文件内容全部读入内存
+	fileContents, err := ioutil.ReadAll(file)
+	if checkErr(w, err, 500) {
+		return
+	}
+
+	// 根据文件内容生成 checksum 并检查其是否正确
+	if util.Sha256Hex(fileContents) != r.FormValue("checksum") {
+		jsonMessage(w, "Error Checksum Unmatching", 400)
+		return
+	}
+
+	// 新建一个 Reco, 获得其 ID
+	reco := model.NewReco(r.FormValue("file-name"))
+
+	reco.Checksum = r.FormValue("checksum")
+	reco.FileSize = fileHeader.Size
+
+	// 以 reco.ID 作为文件名生成临时文件
+	filePath := filepath.Join(tempDir, reco.ID+tempFileExt)
+	err = ioutil.WriteFile(filePath, fileContents, 0600)
+	if checkErr(w, err, 500) {
+		return
+	}
+
+	// 如果是图片则生成缩略图
+	if strings.HasPrefix(reco.FileType, "image/") {
+		thumb, err := graphics.Thumbnail(filePath)
+		if checkErr(w, err, 500) {
+			return
+		}
+		reco.Thumb = thumb
+	}
+
+	// 添加标签到 Reco, 后续还要添加 Reco.ID 到 Tag 数据表。
+	fileTags := []byte(r.FormValue("file-tags"))
+	err = json.Unmarshal(fileTags, &reco.Tags)
+	if checkErr(w, err, 500) {
+		return
+	}
+
+	// TODO: send to IBM COS
+
+	// 开始一个事务
+	tx, err := db.Begin(true)
+	if checkErr(w, err, 500) {
+		return
+	}
+	defer tx.Rollback()
+
+	// Save the reco.
+	if checkErr(w, tx.Save(reco), 500) {
+		return
+	}
+
+	// Save tags.
+	var tag Tag
+	for _, tagName := range reco.Tags {
+		err := tx.One("Name", tagName, &tag)
+		if err != nil && err != storm.ErrNotFound {
+			jsonResponse(w, err, 500)
+			return
+		}
+		if err == storm.ErrNotFound {
+			t := model.NewTag(tagName, reco.ID)
+			tx.Save(t)
+			continue
+		}
+		// if found
+		tag.Add(reco.ID)
+		tx.Update(tag)
+	}
+
 }
 
 func checksumHandler(w http.ResponseWriter, r *http.Request) {
@@ -66,91 +141,5 @@ func checksumHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 正常找到已存在 hashHex, 表示发生文件冲突。
-	jsonMessage(w, "ErrFound", 400)
-}
-
-func newRecoHandler(w http.ResponseWriter, r *http.Request) {
-	var maxBytes int64 = 1024 * 1024 * 10 // 10 MB
-	r.Body = http.MaxBytesReader(w, r.Body, maxBytes)
-	reader, err := r.MultipartReader()
-	if checkErr(w, err, 500) {
-		return
-	}
-
-	tx, err := db.Begin(true)
-	if checkErr(w, err, 500) {
-		return
-	}
-	defer tx.Rollback()
-
-	reco := model.NewReco()
-
-	for {
-		part, err := reader.NextPart()
-		if err == io.EOF {
-			break
-		}
-		if checkErr(w, err, 500) {
-			return
-		}
-
-		contents, err := ioutil.ReadAll(part)
-		if checkErr(w, err, 500) {
-			return
-		}
-
-		log.Print(part.FormName())
-
-		switch formName := part.FormName(); formName {
-		case "user":
-			reco.User = string(contents)
-		case "message":
-			reco.User = string(contents)
-		case "tags":
-			err := json.Unmarshal(contents, &reco.Tags)
-			if checkErr(w, err, 500) {
-				return
-			}
-		case "links":
-			err := json.Unmarshal(contents, &reco.Links)
-			if checkErr(w, err, 500) {
-				return
-			}
-		case "file":
-			log.Print(part.FileName())
-			file := model.NewFile(part.FileName(), reco.ID)
-			file.Size = int64(len(contents))
-			file.Checksum = util.Sha256Hex(contents)
-
-			filePath := filepath.Join(tempDir, file.ID+tempFileExt)
-			err := ioutil.WriteFile(filePath, contents, 0600)
-			if checkErr(w, err, 500) {
-				return
-			}
-
-			if strings.HasPrefix(file.Type, "image/") {
-				thumb, err := graphics.Thumbnail(filePath)
-				if checkErr(w, err, 500) {
-					return
-				}
-				file.Thumb = thumb
-			}
-
-			// TODO: send to IBM COS
-
-			if checkErr(w, tx.Save(file), 500) {
-				return
-			}
-			reco.Files = append(reco.Files, file.ID)
-		}
-	}
-
-	if checkErr(w, tx.Save(reco), 500) {
-		return
-	}
-	if checkErr(w, tx.Commit(), 500) {
-		return
-	}
-
-	jsonResponse(w, reco, 200)
+	jsonMessage(w, "Error Checksum Found", 400)
 }
