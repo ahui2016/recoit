@@ -80,7 +80,6 @@ const loadTimeLimit = 9000; // 9sec
 const thumbWidth = 128, thumbHeight = 128;
 
 let fileTags = [];
-let thumb64 = '';
 let fileSha256;
 
 $('#upload-btn').click(checkHashUpload);
@@ -129,10 +128,8 @@ async function tryToDrawThumb(file) {
   let src = await readFilePromise(file);
   try {
     await drawThumb(src, file);
-    thumb64 = await getThumb64();
     $('#thumbnail').show();
   } catch (e) {
-    thumb64 = '';
     $('#thumbnail').hide();
   }
 }
@@ -147,18 +144,6 @@ function readFilePromise(file) {
     };
     reader.onerror = reject;
   });
-}
-
-// 获取缩略图的 dataURL, 可以直接作为一个图片的 src,
-// 关于 dataURL 的数据结构请参考 `FileReader.readAsDataURL`.
-async function getThumb64() {
-  try {
-    let blob = await canvasToJPEG(document.querySelector('#thumbnail canvas'));
-    let dataURL = await readFilePromise(blob);
-    return dataURL;
-  } catch (e) {
-    console.log('getThumb64:', e);
-  }
 }
 
 // Convert `canvas.toBlob` to promise style.
@@ -221,9 +206,11 @@ function checkHashUpload(event) {
 
   let form = new FormData();
   form.append('hashHex', fileSha256);
-  ajaxPost(form, '/api/checksum', function() {
+
+  let btn = $('#upload-btn');
+  ajaxPost(form, '/api/checksum', btn, function() {
     if (this.status == 200) {
-      uploadFile();
+      uploadFile(btn);
     } else {
       let errMsg = "Error: Upload Failed. " + this.response.message;
       insertErrorAlert(errMsg);
@@ -231,17 +218,16 @@ function checkHashUpload(event) {
   });
 }
 
-function uploadFile() {
+function uploadFile(btn) {
   let form = new FormData();
   let file = document.querySelector('#file-input').files[0];
   form.append('file', file);
-  form.append('thumbnail', thumb64);
   form.append('checksum', fileSha256);
   form.append('file-name', $('#file-name').val());
   form.append('file-size', file.size);
   form.append('file-tags', JSON.stringify(fileTags));
 
-  ajaxPost(form, '/api/upload-file', function() {
+  ajaxPost(form, '/api/upload-file', btn, function() {
     if (this.status == 200) {
       console.log('OK. File Uploaded.');
     } else {
@@ -253,7 +239,7 @@ function uploadFile() {
 function checkHashHex() {
   let form = new FormData();
   form.append('hashHex', fileSha256);
-  ajaxPost(form, '/api/checksum', function() {
+  ajaxPost(form, '/api/checksum', null, function() {
     if (this.status == 200) {
       console.log('OK');
     } else {
@@ -262,15 +248,27 @@ function checkHashHex() {
   });
 }
 
-function ajaxPost(form, url, onloadHandler) {
+function ajaxPost(form, url, btn, onloadHandler) {
+  if (btn) {
+    btn.prop('disabled', true);
+  }
   let xhr = new XMLHttpRequest();
+
   xhr.responseType = 'json';
   xhr.open('POST', url);
 
   xhr.onerror = function () {
     window.alert('An error occurred during the transaction');
   }
+  
   xhr.onload = onloadHandler;
+
+  xhr.addEventListener('loadend', function() {
+    if (btn) {
+      btn.prop('disabled', false);
+    }
+  });
+
   xhr.send(form);
 }
 

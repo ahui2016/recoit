@@ -68,7 +68,6 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 
 	reco.Checksum = r.FormValue("checksum")
 	reco.FileSize = fileHeader.Size
-	reco.Thumb = r.FormValue("thumbnail")
 
 	// 以 reco.ID 作为文件名生成临时文件
 	filePath := filepath.Join(tempDir, reco.ID+tempFileExt)

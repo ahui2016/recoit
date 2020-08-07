@@ -23,7 +23,6 @@ type Reco struct {
 	FileSize    int64
 	FileType    string
 	Checksum    string `storm:"unique"` // hex(sha256)
-	Thumb       string // Data-URL
 	AccessCount int64
 	AccessedAt  string `storm:"index"` // ISO8601
 	CreatedAt   string `storm:"index"`
