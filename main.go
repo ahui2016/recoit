@@ -69,13 +69,6 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 	reco.Checksum = r.FormValue("checksum")
 	reco.FileSize = fileHeader.Size
 
-	// 以 reco.ID 作为文件名生成临时文件
-	filePath := filepath.Join(tempDir, reco.ID+tempFileExt)
-	err = ioutil.WriteFile(filePath, fileContents, 0600)
-	if checkErr(w, err, 500) {
-		return
-	}
-
 	// 添加标签到 Reco, 后续还要添加 Reco.ID 到 Tag 数据表。
 	fileTags := []byte(r.FormValue("file-tags"))
 	err = json.Unmarshal(fileTags, &reco.Tags)
@@ -118,7 +111,17 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+
 	tx.Commit()
+
+	// 数据库操作成功，生成临时文件。
+	// 不可在数据库操作结束之前生成临时文件，
+	// 因为数据库操作发生错误时不应生成临时文件。
+	filePath := filepath.Join(tempDir, reco.ID+tempFileExt)
+	err = ioutil.WriteFile(filePath, fileContents, 0600)
+	if checkErr(w, err, 500) {
+		return
+	}
 }
 
 func checksumHandler(w http.ResponseWriter, r *http.Request) {

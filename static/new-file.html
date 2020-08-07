@@ -30,6 +30,16 @@
             <input type="file" class="form-control-file" id="file-input">
           </div>
 
+          <!--成功提示-->
+          <template id="alert-success-tmpl">
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <span class="AlertMessage"></span>
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                  <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+          </template>
+
           <!--错误提示-->
           <template id="alert-danger-tmpl">
             <div class="alert alert-danger alert-dismissible fade show" role="alert">
@@ -214,6 +224,7 @@ function checkHashUpload(event) {
     } else {
       let errMsg = "Error: Upload Failed. " + this.response.message;
       insertErrorAlert(errMsg);
+      $('#hidden-fields').hide();
     }
   });
 }
@@ -229,7 +240,8 @@ function uploadFile(btn) {
 
   ajaxPost(form, '/api/upload-file', btn, function() {
     if (this.status == 200) {
-      console.log('OK. File Uploaded.');
+      insertSuccessAlert('OK. File Uploaded.');
+      $('#hidden-fields').hide();
     } else {
       console.log(`Error: ${this.status} ${JSON.stringify(this.response)}`);
     }
@@ -277,6 +289,13 @@ function insertErrorAlert(errMsg) {
   let errAlert = $('#alert-danger-tmpl').contents().clone();
   errAlert.find('.AlertMessage').text(errMsg);
   errAlert.insertAfter('#alert-danger-tmpl');
+}
+
+function insertSuccessAlert(errMsg) {
+  console.log(errMsg);
+  let errAlert = $('#alert-success-tmpl').contents().clone();
+  errAlert.find('.AlertMessage').text(errMsg);
+  errAlert.insertAfter('#alert-success-tmpl');
 }
 
     </script>
