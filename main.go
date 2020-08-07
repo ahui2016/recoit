@@ -7,9 +7,7 @@ import (
 	"log"
 	"net/http"
 	"path/filepath"
-	"strings"
 
-	"github.com/ahui2016/recoit/graphics"
 	"github.com/ahui2016/recoit/model"
 	"github.com/ahui2016/recoit/util"
 	"github.com/asdine/storm/v3"
@@ -44,7 +42,7 @@ func homePage(w http.ResponseWriter, r *http.Request) {
 }
 
 func uploadHandler(w http.ResponseWriter, r *http.Request) {
-	var maxBytes int64 = 1024 * 1024 * 10 // 10 MB
+	var maxBytes int64 = 1024 * 1024 * 3 // 3 MB
 	r.Body = http.MaxBytesReader(w, r.Body, maxBytes)
 
 	file, fileHeader, err := r.FormFile("file")
@@ -70,21 +68,13 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 
 	reco.Checksum = r.FormValue("checksum")
 	reco.FileSize = fileHeader.Size
+	reco.Thumb = r.FormValue("thumbnail")
 
 	// 以 reco.ID 作为文件名生成临时文件
 	filePath := filepath.Join(tempDir, reco.ID+tempFileExt)
 	err = ioutil.WriteFile(filePath, fileContents, 0600)
 	if checkErr(w, err, 500) {
 		return
-	}
-
-	// 如果是图片则生成缩略图
-	if strings.HasPrefix(reco.FileType, "image/") {
-		thumb, err := graphics.Thumbnail(filePath)
-		if checkErr(w, err, 500) {
-			return
-		}
-		reco.Thumb = thumb
 	}
 
 	// 添加标签到 Reco, 后续还要添加 Reco.ID 到 Tag 数据表。
@@ -118,14 +108,18 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		if err == storm.ErrNotFound {
 			t := model.NewTag(tagName, reco.ID)
-			tx.Save(t)
+			if checkErr(w, tx.Save(t), 500) {
+				return
+			}
 			continue
 		}
-		// if found
+		// if found (err == nil)
 		tag.Add(reco.ID)
-		tx.Update(tag)
+		if checkErr(w, tx.Update(tag), 500) {
+			return
+		}
 	}
-
+	tx.Commit()
 }
 
 func checksumHandler(w http.ResponseWriter, r *http.Request) {
@@ -141,5 +135,5 @@ func checksumHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 正常找到已存在 hashHex, 表示发生文件冲突。
-	jsonMessage(w, "Error Checksum Found", 400)
+	jsonMessage(w, "Checksum Already Exists", 400)
 }

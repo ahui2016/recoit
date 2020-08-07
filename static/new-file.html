@@ -25,12 +25,22 @@
             <span class="navbar-brand mb-0 h1"></span>
         </nav>
 
-        <form id="file-form" style="margin: 50px 0 50px 0;" autocomplete="off">
-          <div class="form-group" style="margin-bottom: 50px;">
+        <form id="file-form" style="margin-top: 50px;" autocomplete="off">
+          <div class="form-group">
             <input type="file" class="form-control-file" id="file-input">
           </div>
 
-          <div id="hidden-fields" style="display: none;">
+          <!--错误提示-->
+          <template id="alert-danger-tmpl">
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <span class="AlertMessage"></span>
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                  <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+          </template>
+
+          <div id="hidden-fields" style="display: none; margin-top: 50px;">
             <div class="form-group row" id="thumbnail" style="display: none;">
               <label for="file-size" class="col-sm-2 col-form-label">Thumbnail</label>
               <div class="col-sm-10">
@@ -58,16 +68,22 @@
                 <input type="text" class="form-control" id="tags-input">
               </div>
             </div>
+
+            <button id="upload-btn" type="submit" class="btn btn-primary">Upload</button>
           </div>
         </form>
     </div>
 
     <script>
 
+const loadTimeLimit = 9000; // 9sec
 const thumbWidth = 128, thumbHeight = 128;
 
 let fileTags = [];
+let thumb64 = '';
 let fileSha256;
+
+$('#upload-btn').click(checkHashUpload);
 
 $('#file-input').change(event => {
   let file = event.target.files[0];
@@ -84,6 +100,7 @@ $('#file-input').change(event => {
     $('#file-size').val(fileSizeToString(file.size));
     $('#file-name').val(file.name);
   }
+  $('.alert-dismissible').alert('close');
 });
 
 function fileSizeToString(fileSize) {
@@ -112,8 +129,10 @@ async function tryToDrawThumb(file) {
   let src = await readFilePromise(file);
   try {
     await drawThumb(src, file);
+    thumb64 = await getThumb64();
     $('#thumbnail').show();
   } catch (e) {
+    thumb64 = '';
     $('#thumbnail').hide();
   }
 }
@@ -127,6 +146,34 @@ function readFilePromise(file) {
       resolve(reader.result);
     };
     reader.onerror = reject;
+  });
+}
+
+// 获取缩略图的 dataURL, 可以直接作为一个图片的 src,
+// 关于 dataURL 的数据结构请参考 `FileReader.readAsDataURL`.
+async function getThumb64() {
+  try {
+    let blob = await canvasToJPEG(document.querySelector('#thumbnail canvas'));
+    let dataURL = await readFilePromise(blob);
+    return dataURL;
+  } catch (e) {
+    console.log('getThumb64:', e);
+  }
+}
+
+// Convert `canvas.toBlob` to promise style.
+// 本来想转换为 webp, 但有些浏览器不支持, 而且转换速度很慢。
+function canvasToJPEG(canvas) {
+  return new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => {
+        canvas.toBlob = null;
+        reject(Error('timeout'));
+    }, loadTimeLimit);
+
+    canvas.toBlob(blob => {
+        clearTimeout(timeout);
+        resolve(blob);
+    }, 'image/jpeg', 0.92);
   });
 }
 
@@ -169,10 +216,26 @@ async function sha256Hex(file) {
   return hashHex;
 }
 
+function checkHashUpload(event) {
+  event.preventDefault();
+
+  let form = new FormData();
+  form.append('hashHex', fileSha256);
+  ajaxPost(form, '/api/checksum', function() {
+    if (this.status == 200) {
+      uploadFile();
+    } else {
+      let errMsg = "Error: Upload Failed. " + this.response.message;
+      insertErrorAlert(errMsg);
+    }
+  });
+}
+
 function uploadFile() {
   let form = new FormData();
   let file = document.querySelector('#file-input').files[0];
   form.append('file', file);
+  form.append('thumbnail', thumb64);
   form.append('checksum', fileSha256);
   form.append('file-name', $('#file-name').val());
   form.append('file-size', file.size);
@@ -182,7 +245,7 @@ function uploadFile() {
     if (this.status == 200) {
       console.log('OK. File Uploaded.');
     } else {
-      console.log(`Error: ${this.status} ${this.statusText} ${this.responseText}`);
+      console.log(`Error: ${this.status} ${JSON.stringify(this.response)}`);
     }
   });
 }
@@ -194,7 +257,7 @@ function checkHashHex() {
     if (this.status == 200) {
       console.log('OK');
     } else {
-      console.log(`Error: ${this.status} ${this.statusText} ${this.responseText}`);
+      console.log(`Error: ${this.status} ${JSON.stringify(this.response)}`);
     }
   });
 }
@@ -209,6 +272,13 @@ function ajaxPost(form, url, onloadHandler) {
   }
   xhr.onload = onloadHandler;
   xhr.send(form);
+}
+
+function insertErrorAlert(errMsg) {
+  console.log(errMsg);
+  let errAlert = $('#alert-danger-tmpl').contents().clone();
+  errAlert.find('.AlertMessage').text(errMsg);
+  errAlert.insertAfter('#alert-danger-tmpl');
 }
 
     </script>
