@@ -136,3 +136,11 @@ func createFile(filePath string, src io.Reader) (int64, *os.File, error) {
 	}
 	return size, f, nil
 }
+
+func accessUpdate(id string, count int64) error {
+	reco := Reco{ID: id}
+	if err := db.UpdateField(&reco, "AccessCount", count+1); err != nil {
+		return err
+	}
+	return db.UpdateField(&reco, "AccessedAt", util.TimeNow())
+}

@@ -90,7 +90,7 @@
 const loadTimeLimit = 9000; // 9sec
 const thumbWidth = 128, thumbHeight = 128;
 
-let fileTags = [];
+let newTags = [];
 let fileSha256;
 
 $('#upload-btn').click(checkHashUpload);
@@ -114,18 +114,11 @@ $('#file-input').change(event => {
 });
 
 // 自动在标签前加井号
-let tagsInput = $('#tags-input');
-tagsInput.blur(() => {
-  let tags = getFileTags();
-  let tagsString = tags.map(x => '#' + x).join(' ');
-  tagsInput.val(tagsString);
+$('#tags-input').blur(() => {
+  newTags = getNewTags();
+  let tagsString = newTags.map(x => '#' + x).join(' ');
+  $('#tags-input').val(tagsString);
 });
-
-function getFileTags() {
-  let items = tagsInput.val().replace(/#/g, ' ').split(' ');
-  fileTags = items.filter(x => x.length > 0);
-  return fileTags;
-}
 
 async function tryToDrawThumb(file) {
   let src = await readFilePromise(file);
@@ -229,7 +222,7 @@ function uploadFile(btn) {
   form.append('checksum', fileSha256);
   form.append('file-name', $('#file-name').val());
   form.append('file-size', file.size);
-  form.append('file-tags', JSON.stringify(fileTags));
+  form.append('file-tags', JSON.stringify(newTags));
 
   ajaxPost(form, '/api/upload-file', btn, function() {
     if (this.status == 200) {

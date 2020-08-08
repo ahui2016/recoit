@@ -43,3 +43,9 @@ function fileSizeToString(fileSize) {
   }
   return `${sizeMB.toFixed(2)} MB`;
 }
+
+function getNewTags() {
+  let items = $('#tags-input').val().replace(/#/g, ' ').split(' ');
+  let tags = items.filter(x => x.length > 0);
+  return tags;
+}

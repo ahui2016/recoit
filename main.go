@@ -152,6 +152,9 @@ func getRecoHandler(w http.ResponseWriter, r *http.Request) {
 	if checkErr(w, db.One("ID", id, &reco), 500) {
 		return
 	}
+	if checkErr(w, accessUpdate(id, reco.AccessCount), 500) {
+		return
+	}
 	reco.Checksum = ""
 	jsonResponse(w, reco, 200)
 }

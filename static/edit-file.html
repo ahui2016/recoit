@@ -26,31 +26,33 @@
           <span class="navbar-brand mb-0 h1"></span>
       </nav>
 
-      <img id="thumbnail" alt="thumbnail" class="img-thumbnail" style="display: none;">
-      <p id="file-size"></p>
-      <p id="file-tags">
-        <template id="tag-tmpl">
-          <a href="#" class="badge badge-secondary"></a>
-        </template>
-      </p>
-      <p id="file-name"></p>
-      <p id="description" style="display: none;"></p>
-      <ul id="links" class="list-group list-group-flush small" style="display: none;">
-        <template>
-          <li class="list-group-item d-flex align-items-center pl-1 py-1">
-            <img src="/public/link.svg" alt="link icon">
-            <a class="LinkAddress ml-1"></a>
-            <img src="/public/x-circle-fill.svg" class="ml-auto DeleteButton" alt="del">
-          </li>
-        </template>
-      </ul>
+      <div id="view-mode" style="margin: 50px 0 50px 0;">
+        <img id="thumbnail" alt="thumbnail" class="img-thumbnail" style="display: none;">
+        <p id="file-size"></p>
+        <p id="file-tags">
+          <template id="tag-tmpl">
+            <a href="#" class="badge badge-secondary"></a>
+          </template>
+        </p>
+        <p id="file-name" style="font-weight: bold;"></p>
+        <p id="description" style="display: none;"></p>
+        <ul id="links" class="list-group list-group-flush small" style="display: none;">
+          <template>
+            <li class="list-group-item d-flex align-items-center pl-1 py-1">
+              <img src="/public/link.svg" alt="link icon">
+              <a class="LinkAddress ml-1"></a>
+              <img src="/public/x-circle-fill.svg" class="ml-auto DeleteButton" alt="del">
+            </li>
+          </template>
+        </ul>  
+      </div>
 
-      <div class="custom-control custom-switch" style="margin: 50px 0 50px 0; display: none;">
+      <div class="custom-control custom-switch" style="display: none;">
         <input type="checkbox" id="toggle-edit" class="custom-control-input">
         <label class="custom-control-label" for="toggle-edit">Toggle Edit Mode</label>
       </div>
 
-      <form id="file-form" autocomplete="off" style="display: none;">
+      <form id="file-form" autocomplete="off" style="margin: 50px 0 50px 0; display: none;">
 
         <div class="form-group row" id="thumbnail" style="display: none;">
           <label for="file-size" class="col-sm-2 col-form-label">Thumbnail</label>
@@ -80,7 +82,7 @@
           </div>
         </div>
 
-        <button id="upload-btn" type="submit" class="btn btn-primary">Upload</button>
+        <button id="upload-btn" type="submit" class="btn btn-primary">Update</button>
       </form>
 
       <!--成功提示-->
@@ -110,6 +112,15 @@
 let id = getUrlParam('id');
 initData();
 
+let recoTags = [];
+
+// 自动在标签前加井号
+$('#tags-input').blur(() => {
+  recoTags = getNewTags();
+  let tagsString = recoTags.map(x => '#' + x).join(' ');
+  $('#tags-input').val(tagsString);
+});
+
 function getUrlParam(param) {
   let loc = new URL(document.location);
   return loc.searchParams.get(param);
@@ -122,6 +133,7 @@ function initData() {
   ajaxPost(form, '/api/reco', null, function(){
     if (this.status == 200) {
       let reco = this.response;
+      recoTags = Array.from(reco.Tags);
       setReadonlyData(reco);
       setFormData(reco);
       $('.custom-control.custom-switch').show();
@@ -134,11 +146,20 @@ function initData() {
 function setReadonlyData(reco) {
   $('#file-size').text(fileSizeToString(reco.FileSize));
   $('#file-name').text(reco.FileName);
+  recoTags.forEach(tag => insertTag(tag));
 }
 
 function setFormData(reco) {
   $('#file-size-input').val(fileSizeToString(reco.FileSize));
   $('#file-name-input').val(reco.FileName);
+  let tagsString = recoTags.map(x => '#' + x).join(' ');
+  $('#tags-input').val(tagsString);
+}
+
+function insertTag(tag) {
+  let badge = $('#tag-tmpl').contents().clone();
+  badge.text(tag);
+  badge.insertBefore('#tag-tmpl');
 }
 
 $('#toggle-edit').change(function() {
