@@ -20,9 +20,11 @@ func main() {
 	http.Handle("/public/", http.StripPrefix("/public/", fs))
 
 	http.HandleFunc("/", homePage)
+	http.HandleFunc("/edit-file", editFilePage)
 	// http.HandleFunc("/api/new-reco", newRecoHandler)
 	http.HandleFunc("/api/upload-file", uploadHandler)
 	http.HandleFunc("/api/checksum", checksumHandler)
+	http.HandleFunc("/api/reco", getRecoHandler)
 
 	addr := "127.0.0.1:80"
 	fmt.Println(addr)
@@ -39,6 +41,10 @@ func homePage(w http.ResponseWriter, r *http.Request) {
 	default:
 		jsonMessage(w, "Not Found", 404)
 	}
+}
+
+func editFilePage(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprint(w, htmlFiles["edit-file"])
 }
 
 func uploadHandler(w http.ResponseWriter, r *http.Request) {
@@ -91,9 +97,9 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Save tags.
-	var tag Tag
+	tag := new(Tag)
 	for _, tagName := range reco.Tags {
-		err := tx.One("Name", tagName, &tag)
+		err := tx.One("Name", tagName, tag)
 		if err != nil && err != storm.ErrNotFound {
 			jsonResponse(w, err, 500)
 			return
@@ -138,4 +144,14 @@ func checksumHandler(w http.ResponseWriter, r *http.Request) {
 
 	// 正常找到已存在 hashHex, 表示发生文件冲突。
 	jsonMessage(w, "Checksum Already Exists", 400)
+}
+
+func getRecoHandler(w http.ResponseWriter, r *http.Request) {
+	id := r.FormValue("id")
+	var reco Reco
+	if checkErr(w, db.One("ID", id, &reco), 500) {
+		return
+	}
+	reco.Checksum = ""
+	jsonResponse(w, reco, 200)
 }

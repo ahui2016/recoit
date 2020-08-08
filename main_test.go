@@ -9,4 +9,10 @@ func TestFindAll(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Log("all: ", all)
+
+	var tags []Tag
+	if err := db.All(&tags); err != nil {
+		t.Fatal(err)
+	}
+	t.Log("tags: ", tags)
 }
