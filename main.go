@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"path/filepath"
+	"strings"
 
 	"github.com/ahui2016/recoit/model"
 	"github.com/ahui2016/recoit/util"
@@ -70,7 +71,8 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 新建一个 Reco, 获得其 ID
-	reco := model.NewReco(r.FormValue("file-name"))
+	filename := strings.TrimSpace(r.FormValue("file-name"))
+	reco := model.NewReco(filename)
 
 	reco.Checksum = r.FormValue("checksum")
 	reco.FileSize = fileHeader.Size

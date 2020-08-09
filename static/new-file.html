@@ -116,8 +116,7 @@ $('#file-input').change(event => {
 // 自动在标签前加井号
 $('#tags-input').blur(() => {
   newTags = getNewTags();
-  let tagsString = newTags.map(x => '#' + x).join(' ');
-  $('#tags-input').val(tagsString);
+  $('#tags-input').val(addPrefix(newTags, '#'));
 });
 
 async function tryToDrawThumb(file) {
@@ -229,7 +228,8 @@ function uploadFile(btn) {
       insertSuccessAlert('OK. File Uploaded.');
       $('#hidden-fields').hide();
     } else {
-      console.log(`Error: ${this.status} ${JSON.stringify(this.response)}`);
+      let errMsg = "Error: Upload Failed. " + this.response.message;
+      insertErrorAlert(errMsg);
     }
   });
 }

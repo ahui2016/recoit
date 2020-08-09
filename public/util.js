@@ -45,7 +45,9 @@ function fileSizeToString(fileSize) {
 }
 
 function getNewTags() {
-  let items = $('#tags-input').val().replace(/#/g, ' ').split(' ');
-  let tags = items.filter(x => x.length > 0);
-  return tags;
+  return $('#tags-input').val().replace(/#|,|，/g, ' ').trim().split(/ +/);
+}
+
+function addPrefix(arr, prefix) {
+  return arr.map(x => prefix + x).join(' ');
 }
