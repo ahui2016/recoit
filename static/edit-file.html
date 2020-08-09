@@ -41,7 +41,6 @@
             <li class="list-group-item d-flex align-items-center pl-1 py-1">
               <img src="/public/link.svg" alt="link icon">
               <a class="LinkAddress ml-1"></a>
-              <img src="/public/x-circle-fill.svg" class="ml-auto DeleteButton" alt="del">
             </li>
           </template>
         </ul>  
@@ -89,6 +88,29 @@
           </div>
         </div>
 
+        <div class="form-group row">
+          <label for="link-input" class="col-sm-2 col-form-label">Links</label>
+          <div id="link-input-group" class="input-group col-sm-10">
+            <input type="text" id="link-input" class="form-control" placeholder="https://">
+            <div class="input-group-append">
+              <button id="link-input-btn" class="btn btn-outline-primary">add</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group row">
+          <label for="links-inputted" class="col-sm-2 col-form-label"></label>
+          <ul id="links-inputted" class="input-group col-sm-10 list-group list-group-flush small">
+            <template id="link-input-tmpl">
+              <li class="list-group-item d-flex align-items-center pl-1 py-1">
+                <img src="/public/link.svg" alt="link icon">
+                <a class="LinkAddress ml-1"></a>
+                <img src="/public/x-circle-fill.svg" class="ml-auto DeleteButton" alt="del">
+              </li>
+            </template>
+          </ul>      
+      </div>
+
         <button id="upload-btn" type="submit" class="btn btn-primary">Update</button>
       </form>
 
@@ -119,7 +141,7 @@
 let id = getUrlParam('id');
 initData();
 
-let recoTags = [];
+let recoTags = [], recoLinks = [];
 
 // 自动在标签前加井号
 $('#tags-input').blur(() => {
@@ -173,6 +195,25 @@ $('#toggle-edit').change(function() {
   } else {
     $('#file-form').hide();
   }
+});
+
+$('#link-input-btn').click(event => {
+  event.preventDefault();
+
+  let val = $('#link-input').val().trim();
+  if (val.length == 0) {
+    return;
+  }
+  recoLinks.push(val);
+  let item = $('#link-input-tmpl').contents().clone();
+  item.find('.LinkAddress').text(val);
+  item.find('.DeleteButton').click(e => {
+    let i = recoLinks.indexOf(val);
+    recoLinks.splice(i, 1);
+    e.currentTarget.parentElement.remove();
+  });
+  item.insertAfter('#link-input-tmpl');
+  $('#link-input').val('').focus();
 });
 
     </script>
