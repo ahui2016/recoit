@@ -16,7 +16,24 @@
     <script src="/public/bootstrap.bundle.min.js"></script>
     <script src="/public/util.js"></script>
 
-    <style></style>
+    <style>
+#links-inputted .DeleteButton {
+  visibility: hidden;
+}
+#links-inputted li:hover .DeleteButton {
+  visibility: visible;
+}
+#links-inputted li:hover {
+  background-color: lightgray;
+}
+#links-inputted .LinkAddress {
+  color: black;
+  text-decoration: none;
+}
+#links-inputted li:hover .LinkAddress {
+  text-decoration: underline;
+}
+    </style>
 
   </head>
 
@@ -28,13 +45,15 @@
 
       <div id="view-mode" style="margin: 50px 0 50px 0;">
         <img id="thumbnail" alt="thumbnail" class="img-thumbnail" style="display: none;">
-        <p id="file-size"></p>
-        <p id="file-tags">
-          <template id="tag-tmpl">
-            <a href="#" class="badge badge-secondary"></a>
-          </template>
-        </p>
         <p id="file-name" style="font-weight: bold;"></p>
+        <div>
+          <div id="file-size" style="display: inline;"></div>
+          <div id="file-tags" style="display: inline;">
+            <template id="tag-tmpl">
+              <a href="#" class="badge badge-secondary"></a>
+            </template>
+          </div>
+        </div>
         <p id="description" style="display: none;"></p>
         <ul id="links" class="list-group list-group-flush small" style="display: none;">
           <template>
@@ -49,9 +68,37 @@
       <div class="custom-control custom-switch" style="display: none;">
         <input type="checkbox" id="toggle-edit" class="custom-control-input">
         <label class="custom-control-label" for="toggle-edit">Toggle Edit Mode</label>
+        <span id="delete-btn" style="display: none;"> | <a href="#" style="color: red;">delete file</a></span>
       </div>
 
+      <!--成功提示-->
+      <template id="alert-success-tmpl">
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <span class="AlertMessage"></span>
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+      </template>
+
+      <!--错误提示-->
+      <template id="alert-danger-tmpl">
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <span class="AlertMessage"></span>
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+      </template>
+
       <form id="file-form" autocomplete="off" style="margin: 50px 0 50px 0; display: none;">
+
+        <div class="form-group row">
+          <label for="file-input" class="col-sm-2 col-form-label">Replace File</label>
+          <div class="col-sm-10">
+            <input type="file" class="form-control-file" id="file-input">
+          </div>
+        </div>
 
         <div class="form-group row" id="thumbnail" style="display: none;">
           <label for="file-size" class="col-sm-2 col-form-label">Thumbnail</label>
@@ -100,11 +147,11 @@
 
         <div class="form-group row">
           <label for="links-inputted" class="col-sm-2 col-form-label"></label>
-          <ul id="links-inputted" class="input-group col-sm-10 list-group list-group-flush small">
+          <ul id="links-inputted" style="padding-left: 1em;"
+              class="input-group col-sm-10 list-group list-group-flush small">
             <template id="link-input-tmpl">
               <li class="list-group-item d-flex align-items-center pl-1 py-1">
-                <img src="/public/link.svg" alt="link icon">
-                <a class="LinkAddress ml-1"></a>
+                <a class="LinkAddress ml-1" target="_blank"></a>
                 <img src="/public/x-circle-fill.svg" class="ml-auto DeleteButton" alt="del">
               </li>
             </template>
@@ -113,26 +160,6 @@
 
         <button id="upload-btn" type="submit" class="btn btn-primary">Update</button>
       </form>
-
-      <!--成功提示-->
-      <template id="alert-success-tmpl">
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            <span class="AlertMessage"></span>
-            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-              <span aria-hidden="true">&times;</span>
-            </button>
-        </div>
-      </template>
-
-      <!--错误提示-->
-      <template id="alert-danger-tmpl">
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            <span class="AlertMessage"></span>
-            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-              <span aria-hidden="true">&times;</span>
-            </button>
-        </div>
-      </template>
 
     </div>
 
@@ -192,8 +219,10 @@ function insertTag(tag) {
 $('#toggle-edit').change(function() {
   if ($('#toggle-edit').prop('checked')) {
     $('#file-form').show();
+    $('#delete-btn').show();
   } else {
     $('#file-form').hide();
+    $('#delete-btn').hide();
   }
 });
 
@@ -206,7 +235,9 @@ $('#link-input-btn').click(event => {
   }
   recoLinks.push(val);
   let item = $('#link-input-tmpl').contents().clone();
-  item.find('.LinkAddress').text(val);
+  item.find('.LinkAddress')
+      .text(val)
+      .prop('href', val);
   item.find('.DeleteButton').click(e => {
     let i = recoLinks.indexOf(val);
     recoLinks.splice(i, 1);

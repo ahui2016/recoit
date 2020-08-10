@@ -187,15 +187,6 @@ function drawThumb(src, file) {
   });
 }
 
-// https://developer.mozilla.org/en-US/docs/Web/API/SubtleCrypto/digest
-async function sha256Hex(file) {
-  let buffer = await file.arrayBuffer();
-  const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-  return hashHex;
-}
-
 function checkHashUpload(event) {
   event.preventDefault();
 
@@ -230,18 +221,6 @@ function uploadFile(btn) {
     } else {
       let errMsg = "Error: Upload Failed. " + this.response.message;
       insertErrorAlert(errMsg);
-    }
-  });
-}
-
-function checkHashHex() {
-  let form = new FormData();
-  form.append('hashHex', fileSha256);
-  ajaxPost(form, '/api/checksum', null, function() {
-    if (this.status == 200) {
-      console.log('OK');
-    } else {
-      console.log(`Error: ${this.status} ${JSON.stringify(this.response)}`);
     }
   });
 }

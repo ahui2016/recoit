@@ -45,9 +45,34 @@ function fileSizeToString(fileSize) {
 }
 
 function getNewTags() {
-  return $('#tags-input').val().replace(/#|,|，/g, ' ').trim().split(/ +/);
+  let trimmed = $('#tags-input').val().replace(/#|,|，/g, ' ').trim();
+  if (trimmed.length == 0) {
+    return [];
+  }
+  return trimmed.split(/ +/);
 }
 
 function addPrefix(arr, prefix) {
   return arr.map(x => prefix + x).join(' ');
+}
+
+function checkHashHex(hashHex) {
+  let form = new FormData();
+  form.append('hashHex', hashHex);
+  ajaxPost(form, '/api/checksum', null, function() {
+    if (this.status == 200) {
+      console.log('OK');
+    } else {
+      console.log(`Error: ${this.status} ${JSON.stringify(this.response)}`);
+    }
+  });
+}
+
+// https://developer.mozilla.org/en-US/docs/Web/API/SubtleCrypto/digest
+async function sha256Hex(file) {
+  let buffer = await file.arrayBuffer();
+  const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  return hashHex;
 }
