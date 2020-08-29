@@ -237,7 +237,7 @@ $('#link-input-btn').click(event => {
   let item = $('#link-input-tmpl').contents().clone();
   item.find('.LinkAddress')
       .text(val)
-      .prop('href', val);
+      .attr('href', val);
   item.find('.DeleteButton').click(e => {
     let i = recoLinks.indexOf(val);
     recoLinks.splice(i, 1);

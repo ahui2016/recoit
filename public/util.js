@@ -22,6 +22,30 @@ function ajaxPost(form, url, btn, onloadHandler) {
   xhr.send(form);
 }
 
+function ajaxGet(url, btn, onloadHandler) {
+  if (btn) {
+    btn.prop('disabled', true);
+  }
+  let xhr = new XMLHttpRequest();
+
+  xhr.responseType = 'json';
+  xhr.open('GET', url);
+
+  xhr.onerror = function () {
+    window.alert('An error occurred during the transaction');
+  }
+  
+  xhr.onload = onloadHandler;
+
+  xhr.addEventListener('loadend', function() {
+    if (btn) {
+      btn.prop('disabled', false);
+    }
+  });
+
+  xhr.send();
+}
+
 function insertErrorAlert(errMsg) {
   console.log(errMsg);
   let errAlert = $('#alert-danger-tmpl').contents().clone();
@@ -75,4 +99,17 @@ async function sha256Hex(file) {
   const hashArray = Array.from(new Uint8Array(hashBuffer));
   const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
   return hashHex;
+}
+
+function simpleDateTime(date) {
+  return date.toString().split(' ').slice(1, 5).join(' ')
+}
+
+function simpleDate(date) {
+  let year = '' + date.getFullYear(),
+      month = '' + (date.getMonth() + 1),
+      day = '' + date.getDate();
+  if (month.length < 2) month = '0' + month;
+  if (day.length < 2) day = '0' + day;
+  return [year, month, day].join('-');
 }

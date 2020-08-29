@@ -50,3 +50,11 @@
 - https://astaxie.gitbooks.io/build-web-application-with-golang/content/en/04.5.html
 - https://tutorialedge.net/golang/go-file-upload-tutorial/
 - https://medium.com/wesionary-team/file-uploading-in-go-44111404a506
+
+
+
+## Replace file
+
+- 不提供替换文件功能，但提供 "上传新版本功能"？
+- 上传新版本：自动生成集合，专用于该文件的历史版本的集合
+

@@ -12,6 +12,7 @@ import (
 	"github.com/ahui2016/recoit/model"
 	"github.com/ahui2016/recoit/util"
 	"github.com/asdine/storm/v3"
+	"github.com/asdine/storm/v3/q"
 )
 
 func main() {
@@ -21,6 +22,9 @@ func main() {
 	http.Handle("/public/", http.StripPrefix("/public/", fs))
 
 	http.HandleFunc("/", homePage)
+	http.HandleFunc("/index", indexPage)
+	http.HandleFunc("/api/all-recos", getAllRecos)
+	http.HandleFunc("/add-file", addFilePage)
 	http.HandleFunc("/edit-file", editFilePage)
 	// http.HandleFunc("/api/new-reco", newRecoHandler)
 	http.HandleFunc("/api/upload-file", uploadHandler)
@@ -37,11 +41,19 @@ func homePage(w http.ResponseWriter, r *http.Request) {
 	case "/":
 		fallthrough
 	case "/home":
-		fmt.Fprint(w, htmlFiles["new-file"])
-		// http.Redirect(w, r, "/search", 302)
+		// fmt.Fprint(w, htmlFiles["index"])
+		http.Redirect(w, r, "/index", 302)
 	default:
 		jsonMessage(w, "Not Found", 404)
 	}
+}
+
+func indexPage(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprint(w, htmlFiles["index"])
+}
+
+func addFilePage(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprint(w, htmlFiles["new-file"])
 }
 
 func editFilePage(w http.ResponseWriter, r *http.Request) {
@@ -159,4 +171,16 @@ func getRecoHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	reco.Checksum = ""
 	jsonResponse(w, reco, 200)
+}
+
+func getAllRecos(w http.ResponseWriter, r *http.Request) {
+	var all []Reco
+	err := db.Select(q.Eq("DeletedAt", "")).OrderBy("UpdatedAt").Find(&all)
+	if checkErr(w, err, 500) {
+		return
+	}
+	for _, reco := range all {
+		reco.Checksum = ""
+	}
+	jsonResponse(w, all, 200)
 }

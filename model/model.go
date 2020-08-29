@@ -68,7 +68,7 @@ func (tag *Tag) Add(id string) {
 type Collection struct {
 	ID        string   // primary key
 	Title     string   // `storm:"unique"` 要否限制唯一性？
-	RecoIDs   []string // []Reco.ID
+	RecoIDs   []string // []Reco.ID // 允许用户排序(顶置)
 	CreatedAt string   `storm:"index"` // ISO8601
 	UpdatedAt string   `storm:"index"`
 }
