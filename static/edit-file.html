@@ -43,7 +43,7 @@
           <span class="navbar-brand mb-0 h1"></span>
       </nav>
 
-      <div id="view-mode" style="margin: 50px 0 50px 0;">
+      <div id="section-view" style="margin: 50px 0 50px 0;">
         <img id="thumbnail" alt="thumbnail" class="img-thumbnail" style="display: none;">
         <p id="file-name" style="font-weight: bold;"></p>
         <div>
@@ -65,10 +65,16 @@
         </ul>  
       </div>
 
-      <div class="custom-control custom-switch" style="display: none;">
+      <div id="section-toggle" class="custom-control custom-switch" style="display: none;">
         <input type="checkbox" id="toggle-edit" class="custom-control-input">
         <label class="custom-control-label" for="toggle-edit">Toggle Edit Mode</label>
-        <span id="delete-btn" style="display: none;"> | <a href="#" style="color: red;">delete file</a></span>
+        <span id="delete-file" style="display: none;"> | 
+          <a id="delete-file-btn" href="#" style="color: red;">delete file</a>
+        </span>
+        <span id="delete-confirm" style="display: none;"> | 
+          <span style="color: red;">move to recycle bin?</span>
+          <button id="delete-yes-btn">Yes</button> <button id="delete-no-btn">No</button>
+        </span>
       </div>
 
       <!--成功提示-->
@@ -156,7 +162,7 @@
               </li>
             </template>
           </ul>      
-      </div>
+        </div>
 
         <button id="upload-btn" type="submit" class="btn btn-primary">Update</button>
       </form>
@@ -188,10 +194,17 @@ function initData() {
   ajaxPost(form, '/api/reco', null, function(){
     if (this.status == 200) {
       let reco = this.response;
+
+      if (reco.DeletedAt != "") {
+        $('#section-view').hide();
+        insertSuccessAlert('This file has been move to recycle bin.');
+        return
+      }
+      
       recoTags = Array.from(reco.Tags);
       setReadonlyData(reco);
       setFormData(reco);
-      $('.custom-control.custom-switch').show();
+      $('#section-toggle').show();
     } else {
       insertErrorAlert(this.response.message);
     }
@@ -219,10 +232,11 @@ function insertTag(tag) {
 $('#toggle-edit').change(function() {
   if ($('#toggle-edit').prop('checked')) {
     $('#file-form').show();
-    $('#delete-btn').show();
+    $('#delete-file').show();
   } else {
     $('#file-form').hide();
-    $('#delete-btn').hide();
+    $('#delete-file').hide();
+    $('#delete-confirm').hide();
   }
 });
 
@@ -245,6 +259,33 @@ $('#link-input-btn').click(event => {
   });
   item.insertAfter('#link-input-tmpl');
   $('#link-input').val('').focus();
+});
+
+$('#delete-file-btn').click(event => {
+  event.preventDefault();
+  $('#delete-file').hide();
+  $('#delete-confirm').show();
+});
+
+$('#delete-no-btn').click(event => {
+  $('#delete-confirm').hide();
+  $('#delete-file').show();
+});
+
+$('#delete-yes-btn').click(event => {
+  let form = new FormData();
+  form.append('id', id);
+
+  ajaxPost(form, "/api/delete-reco", $('#delete-yes-btn'), function() {
+    if (this.status == 200) {
+      $('#section-view').hide();
+      $('#section-toggle').hide();
+      $('#file-form').hide();
+      insertSuccessAlert('This file has been move to recycle bin.');
+    } else {
+      insertErrorAlert(this.response.message);
+    }
+  });
 });
 
     </script>

@@ -144,3 +144,8 @@ func accessUpdate(id string, count int64) error {
 	}
 	return db.UpdateField(&reco, "AccessedAt", util.TimeNow())
 }
+
+func deleteReco(id string) error {
+	reco := Reco{ID: id}
+	return db.UpdateField(&reco, "DeletedAt", util.TimeNow())
+}

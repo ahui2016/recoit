@@ -30,6 +30,7 @@ func main() {
 	http.HandleFunc("/api/upload-file", uploadHandler)
 	http.HandleFunc("/api/checksum", checksumHandler)
 	http.HandleFunc("/api/reco", getRecoHandler)
+	http.HandleFunc("/api/delete-reco", deleteRecoHandler)
 
 	addr := "127.0.0.1:80"
 	fmt.Println(addr)
@@ -183,4 +184,12 @@ func getAllRecos(w http.ResponseWriter, r *http.Request) {
 		reco.Checksum = ""
 	}
 	jsonResponse(w, all, 200)
+}
+
+func deleteRecoHandler(w http.ResponseWriter, r *http.Request) {
+	id := r.FormValue("id")
+	if checkErr(w, deleteReco(id), 500) {
+		return
+	}
+	jsonMessage(w, "OK", 200)
 }
