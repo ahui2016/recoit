@@ -100,3 +100,14 @@ func StringIndex(slice []string, item string) int {
 	}
 	return -1
 }
+
+func PathIsNotExist(name string) bool {
+	_, err := os.Lstat(name)
+	if os.IsNotExist(err) {
+		return true
+	}
+	if err != nil {
+		panic(err)
+	}
+	return false
+}

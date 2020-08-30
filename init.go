@@ -19,24 +19,26 @@ import (
 )
 
 const (
-	databaseFolderName = "RecoitDB"
-	databaseFileName   = "recoit.db"
-	tempFolderName     = "RecoitTempDir"
-	tempFileExt        = ".reco"
-	cacheFolderName    = "RecoitCacheDir"
-	staticFolder       = "static"
-	maxAge             = 60 * 60 * 24 * 30 // 30 days
-	secret             = "08-1303"
-	passwordMaxTry     = 5
+	recoitDataFolderName = "recoit_data_folder"
+	databaseFolderName   = "RecoitDB"        // inside "recoit_data_folder"
+	databaseFileName     = "recoit.db"       // inside "RecoitDB"
+	cacheFolderName      = "RecoitCacheDir"  // inside "recoit_data_folder"
+	tempFolderName       = "RecoitTempDir"   // inside "recoit_data_folder"
+	tempThumbFolderName  = "RecoitTempThumb" // inside "recoit_data_folder"
+	tempFileExt          = ".reco"
+	staticFolder         = "static"
+	maxAge               = 60 * 60 * 24 * 30 // 30 days
+	secret               = "08-1303"
+	passwordMaxTry       = 5
 )
 
 var (
-	homeDir      string
-	dbDefaultDir string
-	dbPath       string
-	tempDir      string
-	cacheDir     string
-	db           *storm.DB
+	recoitDataDir string
+	dbPath        string
+	tempDir       string
+	tempThumbDir  string
+	cacheDir      string
+	db            *storm.DB
 )
 
 var (
@@ -52,13 +54,18 @@ type (
 )
 
 func init() {
-	homeDir = userHomeDir()
-	dbDefaultDir = filepath.Join(homeDir, databaseFolderName)
+	recoitDataDir = filepath.Join(userHomeDir(), recoitDataFolderName)
+	dbDefaultDir := filepath.Join(recoitDataDir, databaseFolderName)
 	dbPath = filepath.Join(dbDefaultDir, databaseFileName)
-	tempDir = filepath.Join(homeDir, tempFolderName)
-	cacheDir = filepath.Join(homeDir, cacheFolderName)
+	tempDir = filepath.Join(recoitDataDir, tempFolderName)
+	tempThumbDir = filepath.Join(recoitDataDir, tempThumbFolderName)
+	cacheDir = filepath.Join(recoitDataDir, cacheFolderName)
 
 	fillHtmlFiles()
+	mustMkdir(dbDefaultDir)
+	mustMkdir(tempDir)
+	mustMkdir(tempThumbDir)
+	mustMkdir(cacheDir)
 
 	// open the db here, close the db in main().
 	var err error
@@ -76,6 +83,14 @@ func init() {
 		panic(err)
 	}
 	log.Print(dbPath)
+}
+
+func mustMkdir(name string) {
+	if util.PathIsNotExist(name) {
+		if err := os.Mkdir(name, 0600); err != nil {
+			panic(err)
+		}
+	}
 }
 
 func userHomeDir() string {
@@ -135,17 +150,4 @@ func createFile(filePath string, src io.Reader) (int64, *os.File, error) {
 		return 0, nil, err
 	}
 	return size, f, nil
-}
-
-func accessUpdate(id string, count int64) error {
-	reco := Reco{ID: id}
-	if err := db.UpdateField(&reco, "AccessCount", count+1); err != nil {
-		return err
-	}
-	return db.UpdateField(&reco, "AccessedAt", util.TimeNow())
-}
-
-func deleteReco(id string) error {
-	reco := Reco{ID: id}
-	return db.UpdateField(&reco, "DeletedAt", util.TimeNow())
 }

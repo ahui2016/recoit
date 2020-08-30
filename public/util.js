@@ -9,7 +9,7 @@ function ajaxPost(form, url, btn, onloadHandler) {
 
   xhr.onerror = function () {
     window.alert('An error occurred during the transaction');
-  }
+  };
   
   xhr.onload = onloadHandler;
 

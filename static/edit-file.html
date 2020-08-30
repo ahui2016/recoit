@@ -200,7 +200,7 @@ function initData() {
         insertSuccessAlert('This file has been move to recycle bin.');
         return
       }
-      
+
       recoTags = Array.from(reco.Tags);
       setReadonlyData(reco);
       setFormData(reco);
@@ -273,10 +273,20 @@ $('#delete-no-btn').click(event => {
 });
 
 $('#delete-yes-btn').click(event => {
+  $('#delete-yes-btn').prop('disabled', true);
+  $('#delete-no-btn').prop('disabled', true);
+  $('#upload-btn').prop('disabled', true);
+
   let form = new FormData();
   form.append('id', id);
+  let xhr = new XMLHttpRequest();
+  xhr.responseType = 'json';
+  xhr.open('POST', "/api/delete-reco");
 
-  ajaxPost(form, "/api/delete-reco", $('#delete-yes-btn'), function() {
+  xhr.onerror = function () {
+    window.alert('An error occurred during the transaction');
+  };
+  xhr.onload = function() {
     if (this.status == 200) {
       $('#section-view').hide();
       $('#section-toggle').hide();
@@ -285,7 +295,13 @@ $('#delete-yes-btn').click(event => {
     } else {
       insertErrorAlert(this.response.message);
     }
+  };
+  xhr.addEventListener('loadend', function() {
+    $('#delete-yes-btn').prop('disabled', false);
+    $('#delete-no-btn').prop('disabled', false);
+    $('#upload-btn').prop('disabled', false);
   });
+  xhr.send(form);
 });
 
     </script>
