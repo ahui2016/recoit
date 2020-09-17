@@ -44,7 +44,13 @@
       </nav>
 
       <div id="section-view" style="margin: 50px 0 50px 0;">
-        <img id="thumbnail" alt="thumbnail" class="img-thumbnail" style="display: none;">
+        <div id="thumb-card" class="card" style="width: 128px; height: 128px; display: none;">
+          <div class="card-body d-flex align-items-center">
+            <div>
+              <img id="thumbnail" alt="thumb" width="128" height="128">
+            </div>
+          </div>
+        </div>
         <p id="file-name" style="font-weight: bold;"></p>
         <div>
           <div id="file-size" style="display: inline;"></div>
@@ -62,7 +68,7 @@
               <a class="LinkAddress ml-1"></a>
             </li>
           </template>
-        </ul>  
+        </ul>
       </div>
 
       <div id="section-toggle" class="custom-control custom-switch" style="display: none;">
@@ -218,6 +224,22 @@ function setReadonlyData(reco) {
 }
 
 function setFormData(reco) {
+  if (reco.FileType.startsWith('image/')) {
+    $('#thumb-card').show();
+    $('#thumbnail')
+      .click(() => {
+        let form = new FormData();
+        form.append('id', id);
+        ajaxPost(form, '/api/thumb', null, function() {
+          if (this.status == 200) {
+            $('#thumbnail').attr('src', thumbUrlDate(id));
+          } else {
+            insertErrorAlert(this.response.message);
+          }
+        });
+      })
+      .attr('src', thumbURL(reco.ID));
+  }
   $('#file-size-input').val(fileSizeToString(reco.FileSize));
   $('#file-name-input').val(reco.FileName);
   $('#tags-input').val(addPrefix(recoTags, '#'));

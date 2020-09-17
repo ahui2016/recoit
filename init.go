@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -20,12 +19,13 @@ import (
 
 const (
 	recoitDataFolderName = "recoit_data_folder"
-	databaseFolderName   = "RecoitDB"        // inside "recoit_data_folder"
-	databaseFileName     = "recoit.db"       // inside "RecoitDB"
-	cacheFolderName      = "RecoitCacheDir"  // inside "recoit_data_folder"
-	tempFolderName       = "RecoitTempDir"   // inside "recoit_data_folder"
-	tempThumbFolderName  = "RecoitTempThumb" // inside "recoit_data_folder"
+	databaseFolderName   = "RecoitDB"         // inside "recoit_data_folder"
+	databaseFileName     = "recoit.db"        // inside "RecoitDB"
+	cacheFolderName      = "RecoitCacheDir"   // inside "recoit_data_folder"
+	cacheThumbFolderName = "RecoitCacheThumb" // inside "recoit_data_folder"
+	tempFolderName       = "RecoitTempDir"    // inside "recoit_data_folder"
 	tempFileExt          = ".reco"
+	thumbFileExt         = ".small"
 	staticFolder         = "static"
 	maxAge               = 60 * 60 * 24 * 30 // 30 days
 	secret               = "08-1303"
@@ -36,8 +36,8 @@ var (
 	recoitDataDir string
 	dbPath        string
 	tempDir       string
-	tempThumbDir  string
 	cacheDir      string
+	cacheThumbDir string
 	db            *storm.DB
 )
 
@@ -58,14 +58,14 @@ func init() {
 	dbDefaultDir := filepath.Join(recoitDataDir, databaseFolderName)
 	dbPath = filepath.Join(dbDefaultDir, databaseFileName)
 	tempDir = filepath.Join(recoitDataDir, tempFolderName)
-	tempThumbDir = filepath.Join(recoitDataDir, tempThumbFolderName)
 	cacheDir = filepath.Join(recoitDataDir, cacheFolderName)
+	cacheThumbDir = filepath.Join(recoitDataDir, cacheThumbFolderName)
 
 	fillHtmlFiles()
 	mustMkdir(dbDefaultDir)
 	mustMkdir(tempDir)
-	mustMkdir(tempThumbDir)
 	mustMkdir(cacheDir)
+	mustMkdir(cacheThumbDir)
 
 	// open the db here, close the db in main().
 	var err error
@@ -127,6 +127,14 @@ func checkErr(w http.ResponseWriter, err error, code int) bool {
 	return false
 }
 
+func jsonMsgOK(w http.ResponseWriter) {
+	jsonMessage(w, "OK", 200)
+}
+
+func jsonMsg404(w http.ResponseWriter) {
+	jsonMessage(w, "Not Found", 404)
+}
+
 func jsonMessage(w http.ResponseWriter, message string, code int) {
 	err := map[string]string{"message": message}
 	jsonResponse(w, err, code)
@@ -138,16 +146,4 @@ func jsonResponse(w http.ResponseWriter, obj interface{}, code int) {
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	w.WriteHeader(code)
 	json.NewEncoder(w).Encode(obj)
-}
-
-func createFile(filePath string, src io.Reader) (int64, *os.File, error) {
-	f, err := os.OpenFile(filePath, os.O_RDWR|os.O_CREATE, 0600)
-	if err != nil {
-		return 0, nil, err
-	}
-	size, err := io.Copy(f, src)
-	if err != nil {
-		return 0, nil, err
-	}
-	return size, f, nil
 }

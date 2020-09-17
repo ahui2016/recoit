@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
+	"io"
 	"math/big"
 	"os"
 	"path/filepath"
@@ -110,4 +111,20 @@ func PathIsNotExist(name string) bool {
 		panic(err)
 	}
 	return false
+}
+
+func PathIsExist(name string) bool {
+	return !PathIsNotExist(name)
+}
+
+func CreateFile(filePath string, src io.Reader) (int64, *os.File, error) {
+	f, err := os.OpenFile(filePath, os.O_RDWR|os.O_CREATE, 0600)
+	if err != nil {
+		return 0, nil, err
+	}
+	size, err := io.Copy(f, src)
+	if err != nil {
+		return 0, nil, err
+	}
+	return size, f, nil
 }

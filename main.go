@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/ahui2016/recoit/graphics"
 	"github.com/ahui2016/recoit/model"
 	"github.com/ahui2016/recoit/util"
 	"github.com/asdine/storm/v3"
@@ -18,8 +19,14 @@ import (
 func main() {
 	defer db.Close()
 
-	fs := http.FileServer(http.Dir("public/"))
+	fs := http.FileServer(http.Dir("public"))
 	http.Handle("/public/", http.StripPrefix("/public/", fs))
+
+	cacheFS := http.FileServer(http.Dir(cacheDir))
+	http.Handle("/cache/", http.StripPrefix("/cache/", cacheFS))
+
+	thumbFS := http.FileServer(http.Dir(cacheThumbDir))
+	http.Handle("/thumb/", http.StripPrefix("/thumb/", thumbFS))
 
 	http.HandleFunc("/", homePage)
 	http.HandleFunc("/index", indexPage)
@@ -31,6 +38,7 @@ func main() {
 	http.HandleFunc("/api/checksum", checksumHandler)
 	http.HandleFunc("/api/reco", getRecoHandler)
 	http.HandleFunc("/api/delete-reco", deleteRecoHandler)
+	http.HandleFunc("/api/thumb", getThumbHandler)
 
 	addr := "127.0.0.1:80"
 	fmt.Println(addr)
@@ -45,7 +53,7 @@ func homePage(w http.ResponseWriter, r *http.Request) {
 		// fmt.Fprint(w, htmlFiles["index"])
 		http.Redirect(w, r, "/index", 302)
 	default:
-		jsonMessage(w, "Not Found", 404)
+		jsonMsg404(w)
 	}
 }
 
@@ -138,11 +146,9 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 	// 数据库操作成功，生成临时文件。
 	// 不可在数据库操作结束之前生成临时文件，
 	// 因为数据库操作发生错误时不应生成临时文件。
-	filePath := filepath.Join(tempDir, reco.ID+tempFileExt)
+	filePath := filepath.Join(cacheDir, reco.ID+tempFileExt)
 	err = ioutil.WriteFile(filePath, fileContents, 0600)
-	if checkErr(w, err, 500) {
-		return
-	}
+	checkErr(w, err, 500)
 }
 
 func checksumHandler(w http.ResponseWriter, r *http.Request) {
@@ -150,7 +156,7 @@ func checksumHandler(w http.ResponseWriter, r *http.Request) {
 	var reco Reco
 	err := db.One("Checksum", hashHex, &reco)
 	if err == storm.ErrNotFound {
-		jsonMessage(w, "OK", 200)
+		jsonMsgOK(w)
 		return
 	}
 	if checkErr(w, err, 500) {
@@ -191,5 +197,32 @@ func deleteRecoHandler(w http.ResponseWriter, r *http.Request) {
 	if checkErr(w, deleteReco(id), 500) {
 		return
 	}
-	jsonMessage(w, "OK", 200)
+	jsonMsgOK(w)
+}
+
+// 确保缩略图存在，如果不存在就生成。
+func getThumbHandler(w http.ResponseWriter, r *http.Request) {
+	id := r.FormValue("id")
+	if id == "" {
+		jsonMessage(w, "id is empty", 400)
+		return
+	}
+
+	imgPath := filepath.Join(cacheDir, id+tempFileExt)
+	thumbPath := filepath.Join(cacheThumbDir, id+thumbFileExt)
+
+	// 验证这个文件是图片（省略，因为省略也不会出大问题）
+
+	if util.PathIsNotExist(thumbPath) {
+		// 如果 imgPath 不存在，则从 COS 获取文件（暂时省略，需要补充）
+		buf, err := graphics.Thumbnail(imgPath)
+		if checkErr(w, err, 500) {
+			return
+		}
+		_, _, err = util.CreateFile(thumbPath, buf)
+		if checkErr(w, err, 500) {
+			return
+		}
+	}
+	jsonMsgOK(w)
 }

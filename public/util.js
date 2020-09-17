@@ -113,3 +113,12 @@ function simpleDate(date) {
   if (day.length < 2) day = '0' + day;
   return [year, month, day].join('-');
 }
+
+function thumbURL(id) {
+  return '/thumb/' + id + '.small';
+}
+
+function thumbUrlDate(id) {
+  let d = new Date();
+  return thumbURL(id) + '?' + d.getTime();
+}

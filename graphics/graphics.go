@@ -2,7 +2,6 @@ package graphics
 
 import (
 	"bytes"
-	"encoding/base64"
 	"image"
 	"image/jpeg"
 	"os"
@@ -12,30 +11,29 @@ import (
 )
 
 const (
-	imageSize = 128
+	thumbSize = 128
 	quality   = 80
 )
 
-// Thumbnail create a thumbnail of imgFile, and encodes it to base64 string.
-func Thumbnail(imgFile string) (string, error) {
+// Thumbnail create a thumbnail of imgFile.
+func Thumbnail(imgFile string) (*bytes.Buffer, error) {
 	src, err := imaging.Open(imgFile, imaging.AutoOrientation(true))
 	if err != nil {
 		file, err := os.Open(imgFile)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 		src, err = webp.Decode(file)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 	}
 	side := shortSide(src.Bounds())
 	src = imaging.CropCenter(src, side, side)
-	src = imaging.Resize(src, imageSize, 0, imaging.NearestNeighbor)
+	src = imaging.Resize(src, thumbSize, 0, imaging.NearestNeighbor)
 	buf := new(bytes.Buffer)
 	err = jpeg.Encode(buf, src, &jpeg.Options{Quality: quality})
-	blob := base64.StdEncoding.EncodeToString(buf.Bytes())
-	return blob, nil
+	return buf, err
 }
 
 func shortSide(bounds image.Rectangle) int {
