@@ -13,6 +13,8 @@ import (
 	"sort"
 	"strconv"
 	"time"
+
+	"github.com/ahui2016/recoit/graphics"
 )
 
 const (
@@ -127,4 +129,15 @@ func CreateFile(filePath string, src io.Reader) (int64, *os.File, error) {
 		return 0, nil, err
 	}
 	return size, f, nil
+}
+
+func CreateThumb(imgPath, thumbPath string) error {
+	buf, err := graphics.Thumbnail(imgPath)
+	if err != nil {
+		return err
+	}
+	if _, _, err := CreateFile(thumbPath, buf); err != nil {
+		return err
+	}
+	return nil
 }

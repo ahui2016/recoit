@@ -226,8 +226,7 @@ function setReadonlyData(reco) {
 }
 
 function setFormData(reco) {
-  if (reco.FileType.startsWith('image/')) {
-    // $('#thumb-card').show();
+  if (reco.FileType.startsWith('image')) {
     $('#thumbnail')
       .css('display', 'block')
       .css('cursor', 'pointer')

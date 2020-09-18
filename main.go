@@ -6,10 +6,8 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"path/filepath"
 	"strings"
 
-	"github.com/ahui2016/recoit/graphics"
 	"github.com/ahui2016/recoit/model"
 	"github.com/ahui2016/recoit/util"
 	"github.com/asdine/storm/v3"
@@ -146,9 +144,17 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 	// 数据库操作成功，生成临时文件。
 	// 不可在数据库操作结束之前生成临时文件，
 	// 因为数据库操作发生错误时不应生成临时文件。
-	filePath := filepath.Join(cacheDir, reco.ID+tempFileExt)
+	filePath := cacheFilePath(reco.ID)
 	err = ioutil.WriteFile(filePath, fileContents, 0600)
-	checkErr(w, err, 500)
+	if checkErr(w, err, 500) {
+		return
+	}
+
+	// 如果该文件是图片，则顺便生成缩略图。
+	if strings.HasPrefix(reco.FileType, "image") {
+		thumbPath := cacheThumbPath(reco.ID)
+		checkErr(w, util.CreateThumb(filePath, thumbPath), 500)
+	}
 }
 
 func checksumHandler(w http.ResponseWriter, r *http.Request) {
@@ -208,19 +214,16 @@ func getThumbHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	imgPath := filepath.Join(cacheDir, id+tempFileExt)
-	thumbPath := filepath.Join(cacheThumbDir, id+thumbFileExt)
+	imgPath := cacheFilePath(id)
+	thumbPath := cacheThumbPath(id)
 
 	// 验证这个文件是图片（省略，因为省略也不会出大问题）
 
 	if util.PathIsNotExist(thumbPath) {
+
 		// 如果 imgPath 不存在，则从 COS 获取文件（暂时省略，需要补充）
-		buf, err := graphics.Thumbnail(imgPath)
-		if checkErr(w, err, 500) {
-			return
-		}
-		_, _, err = util.CreateFile(thumbPath, buf)
-		if checkErr(w, err, 500) {
+
+		if checkErr(w, util.CreateThumb(imgPath, thumbPath), 500) {
 			return
 		}
 	}

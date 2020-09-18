@@ -147,3 +147,11 @@ func jsonResponse(w http.ResponseWriter, obj interface{}, code int) {
 	w.WriteHeader(code)
 	json.NewEncoder(w).Encode(obj)
 }
+
+func cacheFilePath(id string) string {
+	return filepath.Join(cacheDir, id+tempFileExt)
+}
+
+func cacheThumbPath(id string) string {
+	return filepath.Join(cacheThumbDir, id+thumbFileExt)
+}
