@@ -44,10 +44,12 @@
       </nav>
 
       <div id="section-view" style="margin: 50px 0 50px 0;">
+        <img id="thumbnail" class="img-thumbnail" alt="click to load the thumbnail" 
+            style="width: 138px; height: 138px; display: none;">
         <div id="thumb-card" class="card" style="width: 128px; height: 128px; display: none;">
           <div class="card-body d-flex align-items-center">
             <div>
-              <img id="thumbnail" alt="thumb" width="128" height="128">
+              <!-- <img id="thumbnail" alt="thumb" width="128" height="128"> -->
             </div>
           </div>
         </div>
@@ -225,20 +227,33 @@ function setReadonlyData(reco) {
 
 function setFormData(reco) {
   if (reco.FileType.startsWith('image/')) {
-    $('#thumb-card').show();
+    // $('#thumb-card').show();
     $('#thumbnail')
+      .css('display', 'block')
+      .css('cursor', 'pointer')
+      .attr('src', thumbURL(reco.ID))
       .click(() => {
+        // 如果缩略图已成功加载，点击缩略图不会向服务器发信息。
+        if ($('#thumbnail')[0].naturalHeight > 0) {
+          $('#thumbnail')
+              .off('click')
+              .css('cursor', '');
+          return;
+        }
+        // 如果缩略图加载失败，点击缩略图可向服务器申请生成缩略图。
         let form = new FormData();
         form.append('id', id);
         ajaxPost(form, '/api/thumb', null, function() {
           if (this.status == 200) {
-            $('#thumbnail').attr('src', thumbUrlDate(id));
+            $('#thumbnail')
+              .off('click')
+              .css('cursor', '')
+              .attr('src', thumbUrlDate(id));
           } else {
             insertErrorAlert(this.response.message);
           }
         });
-      })
-      .attr('src', thumbURL(reco.ID));
+      });
   }
   $('#file-size-input').val(fileSizeToString(reco.FileSize));
   $('#file-name-input').val(reco.FileName);
