@@ -114,10 +114,10 @@
           </div>
         </div>
 
-        <div class="form-group row" id="thumbnail" style="display: none;">
-          <label for="file-size" class="col-sm-2 col-form-label">Thumbnail</label>
+        <div class="form-group row" id="new-thumb" style="display: none;">
+          <div class="col-sm-2 col-form-label">Thumbnail</div>
           <div class="col-sm-10">
-            <img class="img-thumbnail">
+            <canvas class="img-thumbnail"></canvas>
           </div>
         </div>
 
@@ -183,6 +183,7 @@ let id = getUrlParam('id');
 initData();
 
 let recoTags = [], recoLinks = [];
+let oldFile, fileSha256;
 
 // 自动在标签前加井号
 $('#tags-input').blur(() => {
@@ -202,6 +203,10 @@ function initData() {
   ajaxPost(form, '/api/reco', null, function(){
     if (this.status == 200) {
       let reco = this.response;
+      oldFile = {
+        size: fileSizeToString(reco.FileSize),
+        name: reco.FileName
+      };
 
       if (reco.DeletedAt != "") {
         $('#section-view').hide();
@@ -339,6 +344,33 @@ $('#delete-yes-btn').click(event => {
   });
   xhr.send(form);
 });
+
+$('#file-input').change(event => {
+  let file = event.target.files[0];
+
+  // Chrome 取消选择文件会使 file 变 null, Firefox 无此问题.
+  if (!file) {
+    $('#new-thumb').hide();
+    $('#file-size-input').val(oldFile.size);
+    $('#file-name-input').val(oldFile.name);
+  } else {
+    tryToDrawThumb(file);
+    sha256Hex(file).then(hashHex => fileSha256 = hashHex);
+    $('#file-size-input').val(fileSizeToString(file.size));
+    $('#file-name-input').val(file.name);
+  }
+});
+
+async function tryToDrawThumb(file) {
+  try {
+    let src = await readFilePromise(file);
+    await drawThumb(src, file, '#new-thumb canvas');
+    $('#new-thumb').show();
+  } catch (e) {
+    console.log(e);
+    $('#new-thumb').hide();
+  }
+}
 
     </script>
   </body>

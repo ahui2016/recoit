@@ -1,3 +1,5 @@
+const thumbWidth = 128, thumbHeight = 128;
+
 function ajaxPost(form, url, btn, onloadHandler) {
   if (btn) {
     btn.prop('disabled', true);
@@ -121,4 +123,46 @@ function thumbURL(id) {
 function thumbUrlDate(id) {
   let d = new Date();
   return thumbURL(id) + '?' + d.getTime();
+}
+
+// Convert `FileReader.readAsDataURL` to promise style.
+function readFilePromise(file) {
+  return new Promise((resolve, reject) => {
+    let reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => {
+      resolve(reader.result);
+    };
+    reader.onerror = reject;
+  });
+}
+
+function drawThumb(src, file, canvasName) {
+  return new Promise((resolve, reject) => {
+    let img = new Image();
+    img.src = src;
+    img.onload = function() {
+
+      // 截取原图中间的正方形
+      let sw = img.width, sh = img.height;
+      let sx = 0, sy = 0;
+      if (sw > sh) {
+          sx = (sw - sh) / 2;
+          sw = sh;
+      } else {
+          sy = (sh - sw) / 2;
+          sh = sw;
+      }
+
+      let thumbCanvas = $(canvasName);
+      thumbCanvas
+        .attr('width', thumbWidth)
+        .attr('height', thumbHeight);
+      let ctx = thumbCanvas[0].getContext('2d'); // thumbCanvas[0] is the raw html-element.
+      ctx.drawImage(img, sx, sy, sw, sh, 0, 0, thumbWidth, thumbHeight);
+
+      resolve();
+    };
+    img.onerror = reject;
+  });
 }

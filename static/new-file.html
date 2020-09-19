@@ -87,9 +87,6 @@
 
     <script>
 
-const loadTimeLimit = 9000; // 9sec
-const thumbWidth = 128, thumbHeight = 128;
-
 let newTags = [];
 let fileSha256;
 
@@ -120,71 +117,13 @@ $('#tags-input').blur(() => {
 });
 
 async function tryToDrawThumb(file) {
-  let src = await readFilePromise(file);
   try {
-    await drawThumb(src, file);
+    let src = await readFilePromise(file);
+    await drawThumb(src, file, '#thumbnail canvas');
     $('#thumbnail').show();
   } catch (e) {
     $('#thumbnail').hide();
   }
-}
-
-// Convert `FileReader.readAsDataURL` to promise style.
-function readFilePromise(file) {
-  return new Promise((resolve, reject) => {
-    let reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = () => {
-      resolve(reader.result);
-    };
-    reader.onerror = reject;
-  });
-}
-
-// Convert `canvas.toBlob` to promise style.
-// 本来想转换为 webp, 但有些浏览器不支持, 而且转换速度很慢。
-function canvasToJPEG(canvas) {
-  return new Promise((resolve, reject) => {
-    const timeout = setTimeout(() => {
-        canvas.toBlob = null;
-        reject(Error('timeout'));
-    }, loadTimeLimit);
-
-    canvas.toBlob(blob => {
-        clearTimeout(timeout);
-        resolve(blob);
-    }, 'image/jpeg', 0.92);
-  });
-}
-
-function drawThumb(src, file) {
-  return new Promise((resolve, reject) => {
-    let img = new Image();
-    img.src = src;
-    img.onload = function() {
-
-      // 截取原图中间的正方形
-      let sw = img.width, sh = img.height;
-      let sx = 0, sy = 0;
-      if (sw > sh) {
-          sx = (sw - sh) / 2;
-          sw = sh;
-      } else {
-          sy = (sh - sw) / 2;
-          sh = sw;
-      }
-
-      let thumbCanvas = $('#thumbnail canvas');
-      thumbCanvas
-        .attr('width', thumbWidth)
-        .attr('height', thumbHeight);
-      let ctx = thumbCanvas[0].getContext('2d'); // thumbCanvas[0] is the raw html-element.
-      ctx.drawImage(img, sx, sy, sw, sh, 0, 0, thumbWidth, thumbHeight);
-
-      resolve();
-    };
-    img.onerror = reject;
-  });
 }
 
 function checkHashUpload(event) {

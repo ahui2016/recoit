@@ -36,7 +36,7 @@ func main() {
 	http.HandleFunc("/api/checksum", checksumHandler)
 	http.HandleFunc("/api/reco", getRecoHandler)
 	http.HandleFunc("/api/delete-reco", deleteRecoHandler)
-	http.HandleFunc("/api/thumb", getThumbHandler)
+	http.HandleFunc("/api/thumb", createThumbHandler)
 
 	addr := "127.0.0.1:80"
 	fmt.Println(addr)
@@ -206,8 +206,7 @@ func deleteRecoHandler(w http.ResponseWriter, r *http.Request) {
 	jsonMsgOK(w)
 }
 
-// 确保缩略图存在，如果不存在就生成。
-func getThumbHandler(w http.ResponseWriter, r *http.Request) {
+func createThumbHandler(w http.ResponseWriter, r *http.Request) {
 	id := r.FormValue("id")
 	if id == "" {
 		jsonMessage(w, "id is empty", 400)
@@ -223,7 +222,8 @@ func getThumbHandler(w http.ResponseWriter, r *http.Request) {
 
 		// 如果 imgPath 不存在，则从 COS 获取文件（暂时省略，需要补充）
 
-		if checkErr(w, util.CreateThumb(imgPath, thumbPath), 500) {
+		err := util.CreateThumb(imgPath, thumbPath)
+		if checkErr(w, err, 500) {
 			return
 		}
 	}
