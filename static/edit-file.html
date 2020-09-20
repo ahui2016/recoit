@@ -62,8 +62,8 @@
             </template>
           </div>
         </div>
-        <p id="description" style="display: none;"></p>
-        <ul id="links" class="list-group list-group-flush small" style="display: none;">
+        <p id="description"></p>
+        <ul id="links" class="list-group list-group-flush small">
           <template>
             <li class="list-group-item d-flex align-items-center pl-1 py-1">
               <img src="/public/link.svg" alt="link icon">
@@ -172,7 +172,17 @@
           </ul>      
         </div>
 
-        <button id="upload-btn" type="submit" class="btn btn-primary">Update</button>
+        <!--错误提示-->
+        <template id="alert-update-tmpl">
+          <div class="alert alert-danger alert-dismissible fade show" role="alert">
+              <span class="AlertMessage"></span>
+              <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+              </button>
+          </div>
+        </template>
+
+        <button id="update-btn" type="submit" class="btn btn-primary">Update</button>
       </form>
 
     </div>
@@ -376,22 +386,35 @@ async function tryToDrawThumb(file) {
   }
 }
 
+$('#update-btn').click(event => {
+  event.preventDefault();
+  updateFile($('#update-btn'));
+});
+
 function updateFile(btn) {
+  let file = null, fileSize = oldFile.size;
+  let files = document.querySelector('#file-input').files;
+  if (files.length > 0) {
+    file = files[0];
+    fileSize = file.size;
+  }
+
   let form = new FormData();
-  let file = document.querySelector('#file-input').files[0];
+  form.append('id', id);
   form.append('file', file);
   form.append('checksum', fileSha256);
   form.append('file-name', $('#file-name-input').val()); // 在后端消除空格
-  form.append('file-size', file.size);
-  form.append('file-tags', JSON.stringify(newTags));
+  form.append('file-size', fileSize);
+  form.append('file-tags', JSON.stringify(recoTags));
+  form.append('file-links', JSON.stringify(recoLinks));
 
   ajaxPost(form, '/api/update-file', btn, function() {
     if (this.status == 200) {
       insertSuccessAlert('OK. File Updated.');
       hideAllSections();
     } else {
-      let errMsg = "Error: Upload Failed. " + this.response.message;
-      insertErrorAlert(errMsg);
+      let errMsg = "Error: Update Failed. " + this.response.message;
+      insertErrorAlert(errMsg, $('#alert-update-tmpl'));
     }
   });
 }

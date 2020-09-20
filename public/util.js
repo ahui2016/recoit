@@ -48,11 +48,14 @@ function ajaxGet(url, btn, onloadHandler) {
   xhr.send();
 }
 
-function insertErrorAlert(errMsg) {
+function insertErrorAlert(errMsg, alertTmpl) {
+  if (alertTmpl == null) {
+    alertTmpl = $('#alert-danger-tmpl');
+  }
   console.log(errMsg);
-  let errAlert = $('#alert-danger-tmpl').contents().clone();
+  let errAlert = alertTmpl.contents().clone();
   errAlert.find('.AlertMessage').text(errMsg);
-  errAlert.insertAfter('#alert-danger-tmpl');
+  errAlert.insertAfter(alertTmpl);
 }
 
 function insertSuccessAlert(errMsg) {

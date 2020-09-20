@@ -1,6 +1,7 @@
 package model
 
 import (
+	"errors"
 	"mime"
 	"path/filepath"
 
@@ -44,6 +45,13 @@ func NewReco(filename string) *Reco {
 	reco.FileName = filename
 	reco.FileType = mime.TypeByExtension(filepath.Ext(filename))
 	return reco
+}
+
+func NewFile(filename string) (*Reco, error) {
+	if len(filename) < 3 {
+		return nil, errors.New("filename is too short")
+	}
+	return NewReco(filename), nil
 }
 
 type Tag struct {

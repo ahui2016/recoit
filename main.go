@@ -33,6 +33,7 @@ func main() {
 	http.HandleFunc("/edit-file", editFilePage)
 	// http.HandleFunc("/api/new-reco", newRecoHandler)
 	http.HandleFunc("/api/upload-file", uploadHandler)
+	http.HandleFunc("/api/update-file", updateHandler)
 	http.HandleFunc("/api/checksum", checksumHandler)
 	http.HandleFunc("/api/reco", getRecoHandler)
 	http.HandleFunc("/api/delete-reco", deleteRecoHandler)
@@ -91,7 +92,10 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 
 	// 新建一个 Reco, 获得其 ID
 	filename := strings.TrimSpace(r.FormValue("file-name"))
-	reco := model.NewReco(filename)
+	reco, err := model.NewFile(filename)
+	if checkErr(w, err, 400) {
+		return
+	}
 
 	reco.Checksum = r.FormValue("checksum")
 	reco.FileSize = fileHeader.Size
@@ -155,6 +159,48 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 		thumbPath := cacheThumbPath(reco.ID)
 		checkErr(w, util.CreateThumb(filePath, thumbPath), 500)
 	}
+}
+
+func updateHandler(w http.ResponseWriter, r *http.Request) {
+	var maxBytes int64 = 1024 * 1024 * 3 // 3 MB
+	r.Body = http.MaxBytesReader(w, r.Body, maxBytes)
+
+	// 获取数据库中的 reco
+	id := r.FormValue("id")
+	var reco Reco
+	if checkErr(w, db.One("ID", id, &reco), 500) {
+		return
+	}
+
+	// 为节省流量、减少出错，禁止上传相同文件。
+	checksum := r.FormValue("checksum")
+	if reco.Checksum == checksum {
+		jsonMessage(w, "Can not upload the same file", 400)
+		return
+	}
+
+	file, _, err := r.FormFile("file")
+	if err != nil && err != http.ErrMissingFile {
+		jsonResponse(w, err, 500)
+		return
+	}
+	defer file.Close()
+
+	var fileContents []byte
+	if file != nil {
+		// 将文件内容全部读入内存
+		fileContents, err = ioutil.ReadAll(file)
+		if checkErr(w, err, 500) {
+			return
+		}
+		// 根据文件内容生成 checksum 并检查其是否正确
+		if util.Sha256Hex(fileContents) != checksum {
+			jsonMessage(w, "Error Checksum Unmatching", 400)
+			return
+		}
+		reco.Checksum = checksum
+	}
+
 }
 
 func checksumHandler(w http.ResponseWriter, r *http.Request) {

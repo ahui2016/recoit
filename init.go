@@ -136,8 +136,8 @@ func jsonMsg404(w http.ResponseWriter) {
 }
 
 func jsonMessage(w http.ResponseWriter, message string, code int) {
-	err := map[string]string{"message": message}
-	jsonResponse(w, err, code)
+	msg := map[string]string{"message": message}
+	jsonResponse(w, msg, code)
 }
 
 // https://stackoverflow.com/questions/59763852/can-you-return-json-in-golang-http-error
