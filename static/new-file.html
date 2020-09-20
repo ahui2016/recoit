@@ -122,6 +122,7 @@ async function tryToDrawThumb(file) {
     await drawThumb(src, file, '#thumbnail canvas');
     $('#thumbnail').show();
   } catch (e) {
+    console.log(e);
     $('#thumbnail').hide();
   }
 }

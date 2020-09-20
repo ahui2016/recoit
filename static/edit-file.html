@@ -183,7 +183,8 @@ let id = getUrlParam('id');
 initData();
 
 let recoTags = [], recoLinks = [];
-let oldFile, fileSha256;
+let oldFile = {};
+let fileSha256 = '';
 
 // 自动在标签前加井号
 $('#tags-input').blur(() => {
@@ -222,6 +223,9 @@ function initData() {
       insertErrorAlert(this.response.message);
     }
   });
+
+  // Firefox 有个小 bug, 刷新页面后 switch 不会自动恢复 off 状态。
+  $('#toggle-edit').prop('checked', false);
 }
 
 function setReadonlyData(reco) {
@@ -372,6 +376,31 @@ async function tryToDrawThumb(file) {
   }
 }
 
+function updateFile(btn) {
+  let form = new FormData();
+  let file = document.querySelector('#file-input').files[0];
+  form.append('file', file);
+  form.append('checksum', fileSha256);
+  form.append('file-name', $('#file-name-input').val()); // 在后端消除空格
+  form.append('file-size', file.size);
+  form.append('file-tags', JSON.stringify(newTags));
+
+  ajaxPost(form, '/api/update-file', btn, function() {
+    if (this.status == 200) {
+      insertSuccessAlert('OK. File Updated.');
+      hideAllSections();
+    } else {
+      let errMsg = "Error: Upload Failed. " + this.response.message;
+      insertErrorAlert(errMsg);
+    }
+  });
+}
+
+function hideAllSections() {
+  $('#section-view').hide();
+  $('#section-toggle').hide();
+  $('#file-form').hide();
+}
     </script>
   </body>
 </html>
