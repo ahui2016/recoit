@@ -102,8 +102,7 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 
 	// 添加标签到 Reco, 后续还要添加 Reco.ID 到 Tag 数据表。
 	fileTags := []byte(r.FormValue("file-tags"))
-	err = json.Unmarshal(fileTags, &reco.Tags)
-	if checkErr(w, err, 500) {
+	if checkErr(w, json.Unmarshal(fileTags, &reco.Tags), 500) {
 		return
 	}
 
@@ -179,7 +178,7 @@ func updateHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	file, _, err := r.FormFile("file")
+	file, fileHeader, err := r.FormFile("file")
 	if err != nil && err != http.ErrMissingFile {
 		jsonResponse(w, err, 500)
 		return
@@ -187,6 +186,7 @@ func updateHandler(w http.ResponseWriter, r *http.Request) {
 	defer file.Close()
 
 	var fileContents []byte
+	// 当发生错误 http.ErrMissingFile 时，file 等于 null。
 	if file != nil {
 		// 将文件内容全部读入内存
 		fileContents, err = ioutil.ReadAll(file)
@@ -199,6 +199,66 @@ func updateHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		reco.Checksum = checksum
+		reco.FileSize = fileHeader.Size
+		if checkErr(w, reco.SetFileNameType(r.FormValue("file-name")), 400) {
+			return
+		}
+	}
+
+	if file == nil {
+		reco.Checksum = ""
+		reco.FileSize = 0
+		reco.FileName = ""
+		reco.FileType = model.NoFile
+	}
+
+	reco.Message = r.FormValue("descrition")
+
+	// TODO: to update reco.Collections
+
+	fileLinks := []byte(r.FormValue("file-links"))
+	if checkErr(w, json.Unmarshal(fileLinks, &reco.Links), 500) {
+		return
+	}
+
+	fileTags := []byte(r.FormValue("file-tags"))
+	if checkErr(w, json.Unmarshal(fileTags, &reco.Tags), 500) {
+		return
+	}
+
+	// 至此，reco 已被更新，重新从数据库获取 reco 用来对比有无更新。
+	var oldReco Reco
+	if checkErr(w, db.One("ID", id, &oldReco), 500) {
+		return
+	}
+
+	if oldReco.EqualContent(&reco) {
+		jsonMessage(w, "无任何变化", 401)
+		return
+	}
+
+	// 从这里开始，可以认为 reco 的内容与 oldReco 不同。
+
+	toAdd, toDelete := util.DifferentSlice(oldReco.Tags, reco.Tags)
+
+	reco.AccessCount++
+	reco.AccessedAt = util.TimeNow()
+	reco.UpdatedAt = reco.AccessedAt
+
+	// TODO: update to IBM COS
+
+	tx, err := db.Begin(true)
+	if checkErr(w, err, 500) {
+		return
+	}
+	defer tx.Rollback()
+
+	// 删除再重写，相当于一次完全的更新。
+	if checkErr(w, tx.DeleteStruct(&reco), 500) {
+		return
+	}
+	if checkErr(w, tx.Save(&reco), 500) {
+		return
 	}
 
 }

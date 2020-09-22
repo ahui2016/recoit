@@ -8,6 +8,7 @@ import (
 	"encoding/hex"
 	"io"
 	"math/big"
+	"mime"
 	"os"
 	"path/filepath"
 	"sort"
@@ -140,4 +141,33 @@ func CreateThumb(imgPath, thumbPath string) error {
 		return err
 	}
 	return nil
+}
+
+func TypeByFilename(filename string) string {
+	return mime.TypeByExtension(filepath.Ext(filename))
+}
+
+func DifferentSlice(oldSlice, newSlice []string) (toAdd, toDelete []string) {
+	// newTags 里有，oldTags 里没有的，需要添加到数据库。
+	for _, newItem := range newSlice {
+		if !HasString(oldSlice, newItem) {
+			toAdd = append(toAdd, newItem)
+		}
+	}
+	// oldTags 里有，newTags 里没有的，需要从数据库中删除。
+	for _, oldItem := range oldSlice {
+		if !HasString(newSlice, oldItem) {
+			toDelete = append(toDelete, oldItem)
+		}
+	}
+	return
+}
+
+// SameSlice 判断两个 string slice 的内容是否相同，不限顺序。
+func SameSlice(a, b []string) bool {
+	newItems, missingItems := DifferentSlice(a, b)
+	if newItems == nil && missingItems == nil {
+		return true
+	}
+	return false
 }

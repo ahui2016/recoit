@@ -405,6 +405,7 @@ function updateFile(btn) {
   form.append('checksum', fileSha256);
   form.append('file-name', $('#file-name-input').val()); // 在后端消除空格
   form.append('file-size', fileSize);
+  form.append('description', $('#description-input'));
   form.append('file-tags', JSON.stringify(recoTags));
   form.append('file-links', JSON.stringify(recoLinks));
 

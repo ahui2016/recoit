@@ -2,8 +2,6 @@ package model
 
 import (
 	"errors"
-	"mime"
-	"path/filepath"
 
 	"github.com/ahui2016/recoit/util"
 )
@@ -13,6 +11,8 @@ import (
 
 // 当 Reco.FileType 的值为 NoFile 时，表示该 reco 不含文件。
 const NoFile = "NoFile"
+
+const MinLength = 3
 
 type Reco struct {
 	ID          string   // primary key
@@ -43,15 +43,38 @@ func NewReco(filename string) *Reco {
 		return reco
 	}
 	reco.FileName = filename
-	reco.FileType = mime.TypeByExtension(filepath.Ext(filename))
+	reco.FileType = util.TypeByFilename(filename)
 	return reco
 }
 
 func NewFile(filename string) (*Reco, error) {
-	if len(filename) < 3 {
+	if len(filename) < MinLength {
 		return nil, errors.New("filename is too short")
 	}
 	return NewReco(filename), nil
+}
+
+func (reco *Reco) SetFileNameType(filename string) error {
+	if len(filename) < MinLength {
+		return errors.New("filename is too short")
+	}
+	reco.FileName = filename
+	reco.FileType = util.TypeByFilename(filename)
+	return nil
+}
+
+func (a *Reco) EqualContent(b *Reco) bool {
+	if util.SameSlice(a.Collections, b.Collections) &&
+		a.Message == b.Message &&
+		util.SameSlice(a.Links, b.Links) &&
+		util.SameSlice(a.Tags, b.Tags) &&
+		a.FileName == b.FileName &&
+		a.FileSize == b.FileSize &&
+		a.FileType == b.FileType &&
+		a.Checksum == b.Checksum {
+		return true
+	}
+	return false
 }
 
 type Tag struct {
