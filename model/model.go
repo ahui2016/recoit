@@ -64,6 +64,9 @@ func (reco *Reco) SetFileNameType(filename string) error {
 }
 
 func (a *Reco) EqualContent(b *Reco) bool {
+	if a.ID != b.ID {
+		return false
+	}
 	if util.SameSlice(a.Collections, b.Collections) &&
 		a.Message == b.Message &&
 		util.SameSlice(a.Links, b.Links) &&
@@ -94,6 +97,14 @@ func (tag *Tag) Add(id string) {
 		return
 	}
 	tag.RecoIDs = append(tag.RecoIDs, id)
+}
+
+func (tag *Tag) Remove(id string) {
+	i := util.StringIndex(tag.RecoIDs, id)
+	if i < 0 {
+		return
+	}
+	tag.RecoIDs = util.DeleteFromSlice(tag.RecoIDs, i)
 }
 
 type Collection struct {

@@ -144,20 +144,10 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 
 	tx.Commit()
 
-	// 数据库操作成功，生成临时文件。
-	// 不可在数据库操作结束之前生成临时文件，
-	// 因为数据库操作发生错误时不应生成临时文件。
-	filePath := cacheFilePath(reco.ID)
-	err = ioutil.WriteFile(filePath, fileContents, 0600)
-	if checkErr(w, err, 500) {
-		return
-	}
-
-	// 如果该文件是图片，则顺便生成缩略图。
-	if strings.HasPrefix(reco.FileType, "image") {
-		thumbPath := cacheThumbPath(reco.ID)
-		checkErr(w, util.CreateThumb(filePath, thumbPath), 500)
-	}
+	// 数据库操作成功，生成缓存文件（如果是图片，则顺便生成缩略图）。
+	// 不可在数据库操作结束之前生成缓存文件，
+	// 因为数据库操作发生错误时不应生成缓存文件。
+	checkErr(w, writeCacheFile(reco, fileContents), 500)
 }
 
 func updateHandler(w http.ResponseWriter, r *http.Request) {
@@ -173,17 +163,23 @@ func updateHandler(w http.ResponseWriter, r *http.Request) {
 
 	// 为节省流量、减少出错，禁止上传相同文件。
 	checksum := r.FormValue("checksum")
-	if reco.Checksum == checksum {
+	if checksum != "" && reco.Checksum == checksum {
 		jsonMessage(w, "Can not upload the same file", 400)
 		return
 	}
+
+	// 本来还应该检查 checksum 的唯一性，但替换文件是低频操作，因此可以偷懒。
 
 	file, fileHeader, err := r.FormFile("file")
 	if err != nil && err != http.ErrMissingFile {
 		jsonResponse(w, err, 500)
 		return
 	}
-	defer file.Close()
+	if file != nil {
+		defer file.Close()
+	}
+
+	log.Println("111")
 
 	var fileContents []byte
 	// 当发生错误 http.ErrMissingFile 时，file 等于 null。
@@ -200,19 +196,12 @@ func updateHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		reco.Checksum = checksum
 		reco.FileSize = fileHeader.Size
-		if checkErr(w, reco.SetFileNameType(r.FormValue("file-name")), 400) {
-			return
-		}
 	}
 
-	if file == nil {
-		reco.Checksum = ""
-		reco.FileSize = 0
-		reco.FileName = ""
-		reco.FileType = model.NoFile
+	if checkErr(w, reco.SetFileNameType(r.FormValue("file-name")), 400) {
+		return
 	}
-
-	reco.Message = r.FormValue("descrition")
+	reco.Message = strings.TrimSpace(r.FormValue("description"))
 
 	// TODO: to update reco.Collections
 
@@ -226,6 +215,8 @@ func updateHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	log.Println("222")
+
 	// 至此，reco 已被更新，重新从数据库获取 reco 用来对比有无更新。
 	var oldReco Reco
 	if checkErr(w, db.One("ID", id, &oldReco), 500) {
@@ -238,9 +229,6 @@ func updateHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 从这里开始，可以认为 reco 的内容与 oldReco 不同。
-
-	toAdd, toDelete := util.DifferentSlice(oldReco.Tags, reco.Tags)
-
 	reco.AccessCount++
 	reco.AccessedAt = util.TimeNow()
 	reco.UpdatedAt = reco.AccessedAt
@@ -254,13 +242,51 @@ func updateHandler(w http.ResponseWriter, r *http.Request) {
 	defer tx.Rollback()
 
 	// 删除再重写，相当于一次完全的更新。
-	if checkErr(w, tx.DeleteStruct(&reco), 500) {
+	// 因为 storm 的 update 方法不可更新空值。
+	if checkErr(w, tx.DeleteStruct(&oldReco), 500) {
 		return
 	}
 	if checkErr(w, tx.Save(&reco), 500) {
 		return
 	}
 
+	toAdd, toDelete := util.DifferentSlice(oldReco.Tags, reco.Tags)
+
+	// 删除标签（从 tag.RecoIDs 里删除 id）
+	tag := new(Tag)
+	for _, tagName := range toDelete {
+		if err := tx.One("Name", tagName, tag); err != nil {
+			jsonResponse(w, err, 500)
+			return
+		}
+		tag.Remove(reco.ID) // 每一个 tag 都与该 reco.ID 脱离关系
+		if checkErr(w, tx.Update(tag), 500) {
+			return
+		}
+	}
+
+	// 添加标签（将 id 添加到 tag.RecoIDs 里）
+	for _, tagName := range toAdd {
+		if err := tx.One("Name", tagName, tag); err != nil {
+			jsonResponse(w, err, 500)
+			return
+		}
+		tag.Add(reco.ID)
+		if checkErr(w, tx.Update(tag), 500) {
+			return
+		}
+	}
+
+	tx.Commit()
+
+	log.Println("333")
+
+	// 更新缓存文件
+	if reco.FileType != model.NoFile && reco.Checksum != oldReco.Checksum {
+		if checkErr(w, writeCacheFile(&reco, fileContents), 500) {
+			return
+		}
+	}
 }
 
 func checksumHandler(w http.ResponseWriter, r *http.Request) {

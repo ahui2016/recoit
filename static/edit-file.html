@@ -64,7 +64,7 @@
         </div>
         <p id="description"></p>
         <ul id="links" class="list-group list-group-flush small">
-          <template>
+          <template id="link-tmpl">
             <li class="list-group-item d-flex align-items-center pl-1 py-1">
               <img src="/public/link.svg" alt="link icon">
               <a class="LinkAddress ml-1"></a>
@@ -226,6 +226,7 @@ function initData() {
       }
 
       recoTags = Array.from(reco.Tags);
+      recoLinks = Array.from(reco.Links);
       setReadonlyData(reco);
       setFormData(reco);
       $('#section-toggle').show();
@@ -241,7 +242,9 @@ function initData() {
 function setReadonlyData(reco) {
   $('#file-size').text(fileSizeToString(reco.FileSize));
   $('#file-name').text(reco.FileName);
+  $('#description').text(reco.Message);
   recoTags.forEach(tag => insertTag(tag));
+  recoLinks.forEach(link => insertLink(link));
 }
 
 function setFormData(reco) {
@@ -275,13 +278,21 @@ function setFormData(reco) {
   }
   $('#file-size-input').val(fileSizeToString(reco.FileSize));
   $('#file-name-input').val(reco.FileName);
+  $('#description-input').val(reco.Message);
   $('#tags-input').val(addPrefix(recoTags, '#'));
+  recoLinks.forEach(link => addLinkToForm(link));
 }
 
 function insertTag(tag) {
   let badge = $('#tag-tmpl').contents().clone();
   badge.text(tag);
   badge.insertBefore('#tag-tmpl');
+}
+
+function insertLink(link) {
+  let li = $('#link-tmpl').contents().clone();
+  li.find('.LinkAddress').attr('href', link).text(link);
+  li.insertBefore('#link-tmpl');
 }
 
 $('#toggle-edit').change(function() {
@@ -298,23 +309,27 @@ $('#toggle-edit').change(function() {
 $('#link-input-btn').click(event => {
   event.preventDefault();
 
-  let val = $('#link-input').val().trim();
-  if (val.length == 0) {
+  let link = $('#link-input').val().trim();
+  if (link.length == 0) {
     return;
   }
-  recoLinks.push(val);
+  recoLinks.push(link);
+  addLinkToForm(link);
+  $('#link-input').val('').focus();
+});
+
+function addLinkToForm(link) {
   let item = $('#link-input-tmpl').contents().clone();
   item.find('.LinkAddress')
-      .text(val)
-      .attr('href', val);
+      .attr('href', link)
+      .text(link);
   item.find('.DeleteButton').click(e => {
-    let i = recoLinks.indexOf(val);
+    let i = recoLinks.indexOf(link);
     recoLinks.splice(i, 1);
     e.currentTarget.parentElement.remove();
   });
   item.insertAfter('#link-input-tmpl');
-  $('#link-input').val('').focus();
-});
+}
 
 $('#delete-file-btn').click(event => {
   event.preventDefault();
@@ -405,7 +420,7 @@ function updateFile(btn) {
   form.append('checksum', fileSha256);
   form.append('file-name', $('#file-name-input').val()); // 在后端消除空格
   form.append('file-size', fileSize);
-  form.append('description', $('#description-input'));
+  form.append('description', $('#description-input').val());
   form.append('file-tags', JSON.stringify(recoTags));
   form.append('file-links', JSON.stringify(recoLinks));
 

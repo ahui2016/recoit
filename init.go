@@ -155,3 +155,18 @@ func cacheFilePath(id string) string {
 func cacheThumbPath(id string) string {
 	return filepath.Join(cacheThumbDir, id+thumbFileExt)
 }
+
+func writeCacheFile(file *Reco, fileContents []byte) error {
+	filePath := cacheFilePath(file.ID)
+	if err := ioutil.WriteFile(filePath, fileContents, 0600); err != nil {
+		return err
+	}
+	// 如果该文件是图片，则顺便生成缩略图。
+	if strings.HasPrefix(file.FileType, "image") {
+		thumbPath := cacheThumbPath(file.ID)
+		if err := util.CreateThumb(filePath, thumbPath); err != nil {
+			return err
+		}
+	}
+	return nil
+}

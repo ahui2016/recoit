@@ -105,6 +105,10 @@ func StringIndex(slice []string, item string) int {
 	return -1
 }
 
+func DeleteFromSlice(slice []string, i int) []string {
+	return append(slice[:i], slice[i+1:]...)
+}
+
 func PathIsNotExist(name string) bool {
 	_, err := os.Lstat(name)
 	if os.IsNotExist(err) {
@@ -137,8 +141,10 @@ func CreateThumb(imgPath, thumbPath string) error {
 	if err != nil {
 		return err
 	}
-	if _, _, err := CreateFile(thumbPath, buf); err != nil {
+	if _, f, err := CreateFile(thumbPath, buf); err != nil {
 		return err
+	} else {
+		f.Close()
 	}
 	return nil
 }
