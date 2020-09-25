@@ -169,3 +169,8 @@ function drawThumb(src, file, canvasName) {
     img.onerror = reject;
   });
 }
+
+function getUrlParam(param) {
+  let loc = new URL(document.location);
+  return loc.searchParams.get(param);
+}

@@ -29,9 +29,10 @@ func main() {
 	http.HandleFunc("/", homePage)
 	http.HandleFunc("/index", indexPage)
 	http.HandleFunc("/api/all-recos", getAllRecos)
+	http.HandleFunc("/tag", tagPage)
+	http.HandleFunc("/api/tag", getRecosByTag)
 	http.HandleFunc("/add-file", addFilePage)
 	http.HandleFunc("/edit-file", editFilePage)
-	// http.HandleFunc("/api/new-reco", newRecoHandler)
 	http.HandleFunc("/api/upload-file", uploadHandler)
 	http.HandleFunc("/api/update-file", updateHandler)
 	http.HandleFunc("/api/checksum", checksumHandler)
@@ -66,6 +67,10 @@ func addFilePage(w http.ResponseWriter, r *http.Request) {
 
 func editFilePage(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, htmlFiles["edit-file"])
+}
+
+func tagPage(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprint(w, htmlFiles["tag"])
 }
 
 func uploadHandler(w http.ResponseWriter, r *http.Request) {
@@ -232,8 +237,8 @@ func updateHandler(w http.ResponseWriter, r *http.Request) {
 	toAdd, toDelete := util.DifferentSlice(oldReco.Tags, reco.Tags)
 
 	// 删除标签（从 tag.RecoIDs 里删除 id）
-	tag := new(Tag)
 	for _, tagName := range toDelete {
+		tag := new(Tag)
 		if checkErr(w, tx.One("Name", tagName, tag), 500) {
 			return
 		}
@@ -329,4 +334,26 @@ func createThumbHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	jsonMsgOK(w)
+}
+
+func getRecosByTag(w http.ResponseWriter, r *http.Request) {
+	tagName := r.FormValue("tag")
+	if tagName == "" {
+		jsonMessage(w, "tag is empty", 400)
+		return
+	}
+	tag := new(Tag)
+	if checkErr(w, db.One("Name", tagName, tag), 500) {
+		return
+	}
+	var recos []*Reco
+	for _, id := range tag.RecoIDs {
+		reco := new(Reco)
+		if checkErr(w, db.One("ID", id, reco), 500) {
+			return
+		}
+		reco.Checksum = ""
+		recos = append(recos, reco)
+	}
+	jsonResponse(w, recos, 200)
 }

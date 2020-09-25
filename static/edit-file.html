@@ -202,11 +202,6 @@ $('#tags-input').blur(() => {
   $('#tags-input').val(addPrefix(recoTags, '#'));
 });
 
-function getUrlParam(param) {
-  let loc = new URL(document.location);
-  return loc.searchParams.get(param);
-}
-
 function initData() {
   let form = new FormData();
   form.append('id', id);
@@ -285,8 +280,10 @@ function setFormData(reco) {
 
 function insertTag(tag) {
   let badge = $('#tag-tmpl').contents().clone();
-  badge.text(tag);
-  badge.insertBefore('#tag-tmpl');
+  badge
+    .text(tag)
+    .attr('href', '/tag?name='+tag)
+    .insertBefore('#tag-tmpl');
 }
 
 function insertLink(link) {

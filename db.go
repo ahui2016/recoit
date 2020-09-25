@@ -22,8 +22,8 @@ func deleteReco(id string) error {
 }
 
 func addTags(w http.ResponseWriter, tx storm.Node, tags []string, recoID string) error {
-	tag := new(Tag)
 	for _, tagName := range tags {
+		tag := new(Tag)
 		err := tx.One("Name", tagName, tag)
 		if err != nil && err != storm.ErrNotFound {
 			return err
