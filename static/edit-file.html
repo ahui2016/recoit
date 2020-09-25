@@ -225,8 +225,8 @@ function initData() {
         return
       }
 
-      recoTags = Array.from(reco.Tags);
-      recoLinks = Array.from(reco.Links);
+      if (reco.Tags) recoTags = Array.from(reco.Tags);
+      if (reco.Links) recoLinks = Array.from(reco.Links);
       setReadonlyData(reco);
       setFormData(reco);
       $('#section-toggle').show();

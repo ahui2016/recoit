@@ -121,25 +121,8 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Save tags.
-	tag := new(Tag)
-	for _, tagName := range reco.Tags {
-		err := tx.One("Name", tagName, tag)
-		if err != nil && err != storm.ErrNotFound {
-			jsonResponse(w, err, 500)
-			return
-		}
-		if err == storm.ErrNotFound {
-			t := model.NewTag(tagName, reco.ID)
-			if checkErr(w, tx.Save(t), 500) {
-				return
-			}
-			continue
-		}
-		// if found (err == nil)
-		tag.Add(reco.ID)
-		if checkErr(w, tx.Update(tag), 500) {
-			return
-		}
+	if checkErr(w, addTags(w, tx, reco.Tags, reco.ID), 500) {
+		return
 	}
 
 	tx.Commit()
@@ -179,8 +162,6 @@ func updateHandler(w http.ResponseWriter, r *http.Request) {
 		defer file.Close()
 	}
 
-	log.Println("111")
-
 	var fileContents []byte
 	// 当发生错误 http.ErrMissingFile 时，file 等于 null。
 	if file != nil {
@@ -214,8 +195,6 @@ func updateHandler(w http.ResponseWriter, r *http.Request) {
 	if checkErr(w, json.Unmarshal(fileTags, &reco.Tags), 500) {
 		return
 	}
-
-	log.Println("222")
 
 	// 至此，reco 已被更新，重新从数据库获取 reco 用来对比有无更新。
 	var oldReco Reco
@@ -255,8 +234,7 @@ func updateHandler(w http.ResponseWriter, r *http.Request) {
 	// 删除标签（从 tag.RecoIDs 里删除 id）
 	tag := new(Tag)
 	for _, tagName := range toDelete {
-		if err := tx.One("Name", tagName, tag); err != nil {
-			jsonResponse(w, err, 500)
+		if checkErr(w, tx.One("Name", tagName, tag), 500) {
 			return
 		}
 		tag.Remove(reco.ID) // 每一个 tag 都与该 reco.ID 脱离关系
@@ -266,20 +244,11 @@ func updateHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 添加标签（将 id 添加到 tag.RecoIDs 里）
-	for _, tagName := range toAdd {
-		if err := tx.One("Name", tagName, tag); err != nil {
-			jsonResponse(w, err, 500)
-			return
-		}
-		tag.Add(reco.ID)
-		if checkErr(w, tx.Update(tag), 500) {
-			return
-		}
+	if checkErr(w, addTags(w, tx, toAdd, reco.ID), 500) {
+		return
 	}
 
 	tx.Commit()
-
-	log.Println("333")
 
 	// 更新缓存文件
 	if reco.FileType != model.NoFile && reco.Checksum != oldReco.Checksum {
