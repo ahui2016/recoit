@@ -339,7 +339,7 @@ func createThumbHandler(w http.ResponseWriter, r *http.Request) {
 func getRecosByTag(w http.ResponseWriter, r *http.Request) {
 	tagName := r.FormValue("tag")
 	if tagName == "" {
-		jsonMessage(w, "tag is empty", 400)
+		jsonMessage(w, "tag's name is empty", 400)
 		return
 	}
 	tag := new(Tag)

@@ -41,10 +41,12 @@
         <template id="file-item-tmpl">
           <a class="list-group-item list-group-item-action">
             <div class="d-flex w-100 justify-content-between">
-              <h5 class="mb-1 FileName"></h5>
+              <h5 class="mb-1 text-truncate FileName"></h5>
               <small class="FileSize"></small>
             </div>
-            <p class="mb-1 RecoMessage"></p>
+            <p class="mb-1 text-truncate RecoMessage" style="color: lightgray;"></p>
+            <small class="RecoTags"></small>
+            <br/>
             <small>Updated at: <span class="SimpleDateTime"></span></small>
           </a>  
         </template>
@@ -63,12 +65,19 @@ function initData() {
 
   ajaxPost(form, '/api/tag', null, function(){
     if (this.status == 200) {
+      if (this.response == null) {
+        insertErrorAlert(`No reco related to ${tagName}.`);
+        return;
+      }
       this.response.forEach(reco => {
         let item = $('#file-item-tmpl').contents().clone();
-        item.attr('href', `/edit-file?id=${reco.ID}`);
+        item
+          .attr('title', reco.FileName)
+          .attr('href', `/edit-file?id=${reco.ID}`);
         item.find('.FileName').text(reco.FileName);
         item.find('.FileSize').text(fileSizeToString(reco.FileSize));
-        item.find('.RecoMessage').text(addPrefix(reco.Tags, '#'));
+        item.find('.RecoMessage').text(reco.Message);
+        item.find('.RecoTags').text(addPrefix(reco.Tags, '#'));
         item.find('.SimpleDateTime').text(simpleDateTime(new Date(reco.UpdatedAt)));
         item.insertAfter('#file-item-tmpl');
       });
