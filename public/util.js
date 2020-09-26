@@ -123,6 +123,10 @@ function thumbURL(id) {
   return '/thumb/' + id + '.small';
 }
 
+function cacheURL(id) {
+  return '/cache/' + id + '.reco';
+}
+
 function thumbUrlDate(id) {
   let d = new Date();
   return thumbURL(id) + '?' + d.getTime();
