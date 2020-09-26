@@ -27,7 +27,7 @@
 - 每个集合需要用户自定义一个标题，这会增加心智负担。【问题】
   - 自动用 Reco.Message 的开头二十个字符作为标题？
   - 如果没有 Message 则自动用第一个文件名作为标题？
-  - 标题允许重复？
+  - 标题不允许重复
 - 
 
 
@@ -60,6 +60,27 @@
 
 
 
-## 缓存文件 (temp files)
+## 缓存文件 (cache files)
 
 - 限制缓存文件数量为 1000 以内？ (等遇到性能问题再减少数量)
+
+
+
+## IBM COS
+
+- https://github.com/IBM/ibm-cos-sdk-go
+- https://cloud.ibm.com/docs/cloud-object-storage/iam?topic=cloud-object-storage-service-credentials#service-credentials
+- https://cloud.ibm.com/iam/overview
+
+
+
+## 云同步限制
+
+- 为避免密码泄露导致对象储存费用失控，应限制每天上传流量。
+- 为避免密码泄露导致数据被永久删除，应提供方便的备份功能。
+
+### Authorized IPs
+
+- 位置: Bucket access policies
+- 由于服务器 IP 是固定的，限定 IP 可提高安全性。
+

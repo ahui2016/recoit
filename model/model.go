@@ -9,8 +9,8 @@ import (
 // 软删除 Reco 时从 Collection.RecoIDs 中删除相关 id, 但不清空 Reco.Collections,
 // 从回收站恢复时询问用户是否重新添加到相关 Collection 中.
 
-// 当 Reco.FileType 的值为 NoFile 时，表示该 reco 不含文件。
-const NoFile = "NoFile"
+// 当 Reco.FileType 的值为 NotFile 时，表示该 reco 不含文件。
+const NotFile = "NotFile"
 
 const MinLength = 3
 
@@ -39,7 +39,7 @@ func NewReco(filename string) *Reco {
 		UpdatedAt: now,
 	}
 	if filename == "" {
-		reco.FileType = NoFile
+		reco.FileType = NotFile
 		return reco
 	}
 	reco.FileName = filename
@@ -109,7 +109,7 @@ func (tag *Tag) Remove(id string) {
 
 type Collection struct {
 	ID        string   // primary key
-	Title     string   // `storm:"unique"` 要否限制唯一性？
+	Title     string   `storm:"unique"`
 	RecoIDs   []string // []Reco.ID // 允许用户排序(顶置)
 	CreatedAt string   `storm:"index"` // ISO8601
 	UpdatedAt string   `storm:"index"`

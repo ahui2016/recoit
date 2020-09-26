@@ -8,7 +8,7 @@
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="/public/bootstrap.min.css">
 
-    <title></title>
+    <title>Index - Recoit</title>
 
     <!-- Optional JavaScript -->
     <!-- jQuery first, then Popper.js, then Bootstrap JS -->
@@ -23,8 +23,15 @@
 
   <body>
     <div class="container" style="max-width: 680px; min-width: 400px;">
-      <nav class="navbar navbar-light bg-light mt-1">
-        <span class="navbar-brand mb-0 h1"></span>
+      <nav class="navbar navbar-light bg-light mt-1 mb-3">
+        <span class="navbar-brand mb-0 h1">Index</span>
+        <div class="btn-toolbar" role="toolbar" aria-label="nav bar">
+          <div class="btn-group mr-2" role="group">
+            <a role="button" class="btn btn-outline-dark" href="/add-file" data-toggle="tooltip" title="add file">
+              <img src="/public/icons/file-earmark-plus.svg" alt="add" style="font-size:3rem;">
+            </a>
+          </div>
+        </div>
       </nav>
 
       <!--错误提示-->
@@ -55,6 +62,10 @@
     </div>
 
     <script>
+
+$(function () {
+    $('[data-toggle="tooltip"]').tooltip()
+})
 
 initData();
 

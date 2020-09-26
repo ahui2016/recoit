@@ -62,7 +62,7 @@ func indexPage(w http.ResponseWriter, r *http.Request) {
 }
 
 func addFilePage(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprint(w, htmlFiles["new-file"])
+	fmt.Fprint(w, htmlFiles["add-file"])
 }
 
 func editFilePage(w http.ResponseWriter, r *http.Request) {
@@ -135,7 +135,12 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 	// 数据库操作成功，生成缓存文件（如果是图片，则顺便生成缩略图）。
 	// 不可在数据库操作结束之前生成缓存文件，
 	// 因为数据库操作发生错误时不应生成缓存文件。
-	checkErr(w, writeCacheFile(reco, fileContents), 500)
+	if checkErr(w, writeCacheFile(reco, fileContents), 500) {
+		return
+	}
+
+	// 最终成功，返回新文件的 ID 给前端。
+	jsonMessage(w, reco.ID, 200)
 }
 
 func updateHandler(w http.ResponseWriter, r *http.Request) {
@@ -256,7 +261,7 @@ func updateHandler(w http.ResponseWriter, r *http.Request) {
 	tx.Commit()
 
 	// 更新缓存文件
-	if reco.FileType != model.NoFile && reco.Checksum != oldReco.Checksum {
+	if reco.FileType != model.NotFile && reco.Checksum != oldReco.Checksum {
 		if checkErr(w, writeCacheFile(&reco, fileContents), 500) {
 			return
 		}

@@ -8,7 +8,7 @@
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="/public/bootstrap.min.css">
 
-    <title></title>
+    <title>Search by Tag - Recoit</title>
 
     <!-- Optional JavaScript -->
     <!-- jQuery first, then Popper.js, then Bootstrap JS -->
@@ -23,8 +23,18 @@
 
   <body>
     <div class="container" style="max-width: 680px; min-width: 400px;">
-      <nav class="navbar navbar-light bg-light mt-1">
+      <nav class="navbar navbar-light bg-light mt-1 mb-3">
         <span class="navbar-brand mb-0 h1"></span>
+        <div class="btn-toolbar" role="toolbar" aria-label="nav bar">
+          <div class="btn-group mr-2" role="group">
+            <a role="button" class="btn btn-outline-dark" href="index" data-toggle="tooltip" title="Index">
+              <img src="/public/icons/grid-3x3-gap.svg" alt="all" style="font-size:3rem;">
+            </a>
+            <a role="button" class="btn btn-outline-dark" href="add-file" data-toggle="tooltip" title="add file">
+              <img src="/public/icons/file-earmark-plus.svg" alt="add" style="font-size:3rem;">
+            </a>
+          </div>
+        </div>
       </nav>
 
       <!--错误提示-->
@@ -56,10 +66,16 @@
 
     <script>
 
+$(function () {
+    $('[data-toggle="tooltip"]').tooltip()
+})
+
 let tagName = getUrlParam('name');
 initData();
 
 function initData() {
+  $('.navbar-brand').text(tagName);
+
   let form = new FormData();
   form.append('tag', tagName);
 

@@ -8,7 +8,7 @@
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="/public/bootstrap.min.css">
 
-    <title></title>
+    <title>Edit File - Recoit</title>
 
     <!-- Optional JavaScript -->
     <!-- jQuery first, then Popper.js, then Bootstrap JS -->
@@ -40,7 +40,17 @@
   <body>
     <div class="container" style="max-width: 680px; min-width: 400px;">
       <nav class="navbar navbar-light bg-light mt-1">
-          <span class="navbar-brand mb-0 h1"></span>
+          <span class="navbar-brand mb-0 h1">Edit File</span>
+          <div class="btn-toolbar" role="toolbar" aria-label="nav bar">
+            <div class="btn-group mr-2" role="group">
+              <a role="button" class="btn btn-outline-dark" href="index" data-toggle="tooltip" title="Index">
+                <img src="/public/icons/grid-3x3-gap.svg" alt="all" style="font-size:3rem;">
+              </a>
+              <a role="button" class="btn btn-outline-dark" href="add-file" data-toggle="tooltip" title="add file">
+                <img src="/public/icons/file-earmark-plus.svg" alt="add" style="font-size:3rem;">
+              </a>
+            </div>
+          </div>
       </nav>
 
       <div id="section-view" style="margin: 50px 0 50px 0;">
@@ -49,6 +59,7 @@
         <img id="big-image" alt="click to hide" title="click to hide"
             class="img-fluid" style="display: none; cursor: pointer;">
         <div class="mb-3">
+          <a id="download-btn"><img src="/public/icons/download.svg" alt="download icon"></a>
           <div id="file-size" style="display: inline;"></div>
           <div id="file-tags" style="display: inline;">
             <template id="tag-tmpl">
@@ -61,7 +72,7 @@
         <ul id="links" class="list-group list-group-flush small">
           <template id="link-tmpl">
             <li class="list-group-item d-flex align-items-center pl-1 py-1">
-              <img src="/public/link.svg" alt="link icon">
+              <img src="/public/icons/link.svg" alt="link icon">
               <a class="LinkAddress ml-1"></a>
             </li>
           </template>
@@ -161,7 +172,7 @@
             <template id="link-input-tmpl">
               <li class="list-group-item d-flex align-items-center pl-1 py-1">
                 <a class="LinkAddress ml-1" target="_blank"></a>
-                <img src="/public/x-circle-fill.svg" class="ml-auto DeleteButton" alt="del">
+                <img src="/public/icons/x-circle-fill.svg" class="ml-auto DeleteButton" alt="del">
               </li>
             </template>
           </ul>      
@@ -183,6 +194,10 @@
     </div>
 
     <script>
+
+$(function () {
+    $('[data-toggle="tooltip"]').tooltip()
+})
 
 let id = getUrlParam('id');
 initData();
@@ -233,6 +248,9 @@ function setReadonlyData(reco) {
   $('#file-size').text(fileSizeToString(reco.FileSize));
   $('#file-name').text(reco.FileName);
   $('#description').text(reco.Message);
+  $('#download-btn') // 后续需要增加从 COS 下载文件到缓存文件夹的功能。
+    .attr('href', cacheURL(reco.ID))
+    .attr('download', reco.FileName);
   recoTags.forEach(tag => insertTag(tag));
   recoLinks.forEach(link => insertLink(link));
 }

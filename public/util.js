@@ -58,10 +58,10 @@ function insertErrorAlert(errMsg, alertTmpl) {
   errAlert.insertAfter(alertTmpl);
 }
 
-function insertSuccessAlert(errMsg) {
-  console.log(errMsg);
+function insertSuccessAlert(msg) {
+  console.log(msg);
   let errAlert = $('#alert-success-tmpl').contents().clone();
-  errAlert.find('.AlertMessage').text(errMsg);
+  errAlert.find('.AlertMessage').text(msg);
   errAlert.insertAfter('#alert-success-tmpl');
 }
 
