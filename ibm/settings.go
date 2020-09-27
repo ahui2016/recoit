@@ -1,4 +1,4 @@
-package main
+package ibm
 
 import (
 	"encoding/base64"
@@ -9,11 +9,9 @@ import (
 type Settings struct {
 	ApiKey            string
 	ServiceInstanceID string // resource_instance_id
-	AuthEndpoint      string
 	ServiceEndpoint   string
 	BucketLocation    string
 	BucketName        string
-	ErrMsg            string
 }
 
 // Encode to JSON, and encode to base64.
