@@ -106,8 +106,12 @@ async function sha256Hex(file) {
   return hashHex;
 }
 
+function monthAndDay(simpledatetime) {
+  return simpledatetime.split(' ').slice(0, 2).join(' ');
+}
+
 function simpleDateTime(date) {
-  return date.toString().split(' ').slice(1, 5).join(' ')
+  return date.toString().split(' ').slice(1, 5).join(' ');
 }
 
 function simpleDate(date) {

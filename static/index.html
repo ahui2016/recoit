@@ -52,9 +52,10 @@
               <small class="FileSize"></small>
             </div>
             <p class="mb-1 text-truncate RecoMessage" style="color: lightgray;"></p>
-            <small class="RecoTags"></small>
-            <br/>
-            <small>Updated at: <span class="SimpleDateTime"></span></small>
+            <div class="d-flex w-100 justify-content-between">
+              <small class="mb-0 RecoTags"></small>
+              <small class="SimpleDateTime" style="color: lightgray;"></small>
+            </div>
           </a>  
         </template>
       </div>
@@ -73,6 +74,7 @@ function initData() {
   ajaxGet('/api/all-recos', null, function(){
     if (this.status == 200) {
       this.response.forEach(reco => {
+        let updatedAt = simpleDateTime(new Date(reco.UpdatedAt));
         let item = $('#file-item-tmpl').contents().clone();
         item
           .attr('title', reco.FileName)
@@ -81,7 +83,9 @@ function initData() {
         item.find('.FileSize').text(fileSizeToString(reco.FileSize));
         item.find('.RecoMessage').text(reco.Message);
         item.find('.RecoTags').text(addPrefix(reco.Tags, '#'));
-        item.find('.SimpleDateTime').text(simpleDateTime(new Date(reco.UpdatedAt)));
+        item.find('.SimpleDateTime')
+          .text(monthAndDay(updatedAt))
+          .attr('title', `Updated at: ${updatedAt}`);
         item.insertAfter('#file-item-tmpl');
       });
     } else {
