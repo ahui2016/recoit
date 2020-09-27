@@ -39,6 +39,7 @@ func main() {
 	http.HandleFunc("/api/reco", getRecoHandler)
 	http.HandleFunc("/api/delete-reco", deleteRecoHandler)
 	http.HandleFunc("/api/thumb", createThumbHandler)
+	http.HandleFunc("/setup-cloud", setupCloudPage)
 
 	addr := "127.0.0.1:80"
 	fmt.Println(addr)
@@ -71,6 +72,10 @@ func editFilePage(w http.ResponseWriter, r *http.Request) {
 
 func tagPage(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, htmlFiles["tag"])
+}
+
+func setupCloudPage(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprint(w, htmlFiles["setup-cloud"])
 }
 
 func uploadHandler(w http.ResponseWriter, r *http.Request) {

@@ -70,6 +70,7 @@
 
 - https://github.com/IBM/ibm-cos-sdk-go
 - https://cloud.ibm.com/docs/cloud-object-storage/iam?topic=cloud-object-storage-service-credentials#service-credentials
+- https://cloud.ibm.com/docs/account?topic=account-assign-access-resources
 - https://cloud.ibm.com/iam/overview
 
 
