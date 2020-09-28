@@ -64,7 +64,7 @@
             </li>
         </ul>    
     
-        <form id="file-form" style="margin-top: 50px;" autocomplete="off">
+        <form style="margin-top: 50px;" autocomplete="off">
 
             <div class="form-group">
                 <label for="apikey">
@@ -76,12 +76,12 @@
             </div>
 
             <div class="form-group">
-                <label for="resource_instance_id">
+                <label for="serviceInstanceID">
                     resource_instance_id (serviceInstanceID)
                     <img src="/public/icons/info-circle.svg" alt="info" style="font-size:3rem;"
                          data-toggle="tooltip" title="可在 service credentials 里找到" />
                 </label>
-                <input type="text" class="form-control" id="resource_instance_id" />
+                <input type="text" class="form-control" id="serviceInstanceID" />
             </div>
 
             <div class="form-group">
@@ -92,7 +92,7 @@
                 </label>
                 <input type="text" class="form-control" id="endpoint" />
             </div>
-
+<!-- 
             <div class="form-group">
                 <label for="bucket-location">
                     Bucket Location
@@ -101,7 +101,7 @@
                 </label>
                 <input type="text" class="form-control" id="bucket-location" />
             </div>
-
+ -->
             <div class="form-group">
                 <label for="bucket-name">
                     Bucket Name
@@ -110,17 +110,6 @@
                 </label>
                 <input type="text" class="form-control" id="bucket-name" />
             </div>
-
-          <!--成功提示-->
-          <template id="alert-success-tmpl">
-            <div class="alert alert-success alert-dismissible fade show" role="alert">
-                OK. File Uploaded.
-                <a class="AlertMessage">Click here to edit it</a>.
-                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                  <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-          </template>
 
           <!--错误提示-->
           <template id="alert-danger-tmpl">
@@ -133,8 +122,22 @@
           </template>
 
           <button id="submit-btn" type="submit" class="btn btn-primary">Submit</button>
-
+          <button id="submit-spinner" class="btn btn-primary" style="display: none;" type="button" disabled>
+            Submit
+            <span class="spinner-border spinner-border-sm" role="status"></span>
+          </button>
         </form>
+
+        <!--成功提示-->
+        <template id="alert-success-tmpl">
+          <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <span class="AlertMessage"></span>
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+        </template>
+        
     </div>
 
     <p id="foot-space">.</p>
@@ -144,78 +147,22 @@ $(function () {
     $('[data-toggle="tooltip"]').tooltip()
 })
 
-let newTags = [];
-let fileSha256;
+$('#submit-btn').click(submit);
 
-$('#upload-btn').click(checkHashUpload);
-
-$('#file-input').change(event => {
-  let file = event.target.files[0];
-
-  // Chrome 取消选择文件也会触发 change 事件, Firefox 无此问题.
-  if (!file) {
-    $('#hidden-fields').hide();
-  } else {
-    $('#hidden-fields').show();
-
-    tryToDrawThumb(file);
-    sha256Hex(file).then(hashHex => fileSha256 = hashHex);
-
-    $('#file-size').val(fileSizeToString(file.size));
-    $('#file-name').val(file.name);
-  }
-  $('.alert-dismissible').alert('close');
-});
-
-// 自动在标签前加井号
-$('#tags-input').blur(() => {
-  newTags = getNewTags();
-  $('#tags-input').val(addPrefix(newTags, '#'));
-});
-
-async function tryToDrawThumb(file) {
-  try {
-    let src = await readFilePromise(file);
-    await drawThumb(src, file, '#thumbnail canvas');
-    $('#thumbnail').show();
-  } catch (e) {
-    console.log(e);
-    $('#thumbnail').hide();
-  }
-}
-
-function checkHashUpload(event) {
+function submit() {
   event.preventDefault();
-
   let form = new FormData();
-  form.append('hashHex', fileSha256);
+  form.append('apikey', $('#apikey').val());
+  form.append('serviceInstanceID', $('#serviceInstanceID').val());
+  form.append('endpoint', $('#endpoint').val());
+  // form.append('bucket-location', $('#bucket-location').val());
+  form.append('bucket-name', $('#bucket-name').val());
 
-  let btn = $('#upload-btn');
-  ajaxPost(form, '/api/checksum', btn, function() {
+  postForm(form, '/api/setup-cloud', function() {
     if (this.status == 200) {
-      uploadFile(btn);
-    } else {
-      let errMsg = "Error: Upload Failed. " + this.response.message;
-      insertErrorAlert(errMsg);
-      $('#hidden-fields').hide();
-    }
-  });
-}
-
-function uploadFile(btn) {
-  let form = new FormData();
-  let file = document.querySelector('#file-input').files[0];
-  form.append('file', file);
-  form.append('checksum', fileSha256);
-  form.append('file-name', $('#file-name').val());
-  form.append('file-size', file.size);
-  form.append('file-tags', JSON.stringify(newTags));
-
-  ajaxPost(form, '/api/upload-file', btn, function() {
-    if (this.status == 200) {
-      let editURL = `/edit-file?id=${this.response.message}`;
-      showSuccessAlert(editURL);
-      $('#hidden-fields').hide();
+      insertSuccessAlert('OK. IBM COS is ready to use.');
+      $('ul').hide();
+      $('form').hide();
     } else {
       let errMsg = "Error: Upload Failed. " + this.response.message;
       insertErrorAlert(errMsg);
@@ -223,10 +170,26 @@ function uploadFile(btn) {
   });
 }
 
-function showSuccessAlert(msg) {
-  let errAlert = $('#alert-success-tmpl').contents().clone();
-  errAlert.find('.AlertMessage').attr('href', msg);
-  errAlert.insertAfter('#alert-success-tmpl');
+function postForm(form, url, onloadHandler) {
+  $('#submit-btn').hide();
+  $('#submit-spinner').show();
+
+  let xhr = new XMLHttpRequest();
+  xhr.responseType = 'json';
+  xhr.open('POST', url);
+
+  xhr.onerror = function () {
+    window.alert('An error occurred during the transaction');
+  };
+  
+  xhr.onload = onloadHandler;
+
+  xhr.addEventListener('loadend', function() {
+    $('#submit-btn').show();
+    $('#submit-spinner').hide();
+  });
+
+  xhr.send(form);
 }
     </script>
   </body>

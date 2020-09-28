@@ -12,33 +12,37 @@ import (
 	"github.com/asdine/storm/v3"
 
 	"github.com/ahui2016/recoit/database"
+	"github.com/ahui2016/recoit/ibm"
 	"github.com/ahui2016/recoit/model"
 	"github.com/ahui2016/recoit/session"
 	"github.com/ahui2016/recoit/util"
 )
 
 const (
-	recoitDataFolderName = "recoit_data_folder"
-	databaseFolderName   = "RecoitDB"         // inside "recoit_data_folder"
-	databaseFileName     = "recoit.db"        // inside "RecoitDB"
-	cacheFolderName      = "RecoitCacheDir"   // inside "recoit_data_folder"
-	cacheThumbFolderName = "RecoitCacheThumb" // inside "recoit_data_folder"
-	tempFolderName       = "RecoitTempDir"    // inside "recoit_data_folder"
-	tempFileExt          = ".reco"
-	thumbFileExt         = ".small"
-	staticFolder         = "static"
-	maxAge               = 60 * 60 * 24 * 30 // 30 days
-	secret               = "08-1303"
-	passwordMaxTry       = 5
+	recoitDataFolderName   = "recoit_data_folder"
+	databaseFolderName     = "RecoitDB"         // inside "recoit_data_folder"
+	databaseFileName       = "recoit.db"        // inside "RecoitDB"
+	ibmCosSettingsFileName = "settings.ibm"     // inside "RecoitDB"
+	cacheFolderName        = "RecoitCacheDir"   // inside "recoit_data_folder"
+	cacheThumbFolderName   = "RecoitCacheThumb" // inside "recoit_data_folder"
+	tempFolderName         = "RecoitTempDir"    // inside "recoit_data_folder"
+	tempFileExt            = ".reco"
+	thumbFileExt           = ".small"
+	staticFolder           = "static"
+	maxAge                 = 60 * 60 * 24 * 30 // 30 days
+	secret                 = "08-1303"
+	passwordMaxTry         = 5
 )
 
 var (
-	recoitDataDir string
-	dbPath        string
-	tempDir       string
-	cacheDir      string
-	cacheThumbDir string
-	db            *storm.DB
+	recoitDataDir   string
+	dbPath          string
+	ibmSettingsPath string
+	tempDir         string
+	cacheDir        string
+	cacheThumbDir   string
+	db              *storm.DB
+	cos             *ibm.COS
 )
 
 var (
@@ -57,6 +61,7 @@ func init() {
 	recoitDataDir = filepath.Join(userHomeDir(), recoitDataFolderName)
 	dbDefaultDir := filepath.Join(recoitDataDir, databaseFolderName)
 	dbPath = filepath.Join(dbDefaultDir, databaseFileName)
+	ibmSettingsPath = filepath.Join(dbDefaultDir, ibmCosSettingsFileName)
 	tempDir = filepath.Join(recoitDataDir, tempFolderName)
 	cacheDir = filepath.Join(recoitDataDir, cacheFolderName)
 	cacheThumbDir = filepath.Join(recoitDataDir, cacheThumbFolderName)

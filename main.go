@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/ahui2016/recoit/ibm"
 	"github.com/ahui2016/recoit/model"
 	"github.com/ahui2016/recoit/util"
 	"github.com/asdine/storm/v3"
@@ -40,6 +41,7 @@ func main() {
 	http.HandleFunc("/api/delete-reco", deleteRecoHandler)
 	http.HandleFunc("/api/thumb", createThumbHandler)
 	http.HandleFunc("/setup-cloud", setupCloudPage)
+	http.HandleFunc("/api/setup-cloud", setupCloudHandler)
 
 	addr := "127.0.0.1:80"
 	fmt.Println(addr)
@@ -367,3 +369,28 @@ func getRecosByTag(w http.ResponseWriter, r *http.Request) {
 	}
 	jsonResponse(w, recos, 200)
 }
+
+func setupCloudHandler(w http.ResponseWriter, r *http.Request) {
+	settings := ibm.Settings{
+		ApiKey:            strings.TrimSpace(r.FormValue("apikey")),
+		ServiceInstanceID: strings.TrimSpace(r.FormValue("serviceInstanceID")),
+		ServiceEndpoint:   strings.TrimSpace(r.FormValue("endpoint")),
+		// BucketLocation:    strings.TrimSpace(r.FormValue("bucket-location")),
+		BucketName: strings.TrimSpace(r.FormValue("bucket-name")),
+	}
+	cos = ibm.NewCOS(&settings)
+	err := cos.TryUploadDelete()
+	if err != nil {
+		cos = nil
+	}
+	if checkErr(w, err, 500) {
+		return
+	}
+
+	// 如果没有错误，则将正确的 settings 写入硬盘。
+	settings64 := settings.Encode()
+	err = ioutil.WriteFile(ibmSettingsPath, []byte(settings64), 0600)
+	checkErr(w, err, 500)
+}
+
+// TODO: 检查 ibmSettingsPath 是否存在。

@@ -68,10 +68,20 @@
 
 ## IBM COS
 
+- https://cloud.ibm.com/docs/cloud-object-storage?topic=cloud-object-storage-using-go (重要)
+- https://pkg.go.dev/github.com/IBM/ibm-cos-sdk-go/service/s3 (重要)
 - https://github.com/IBM/ibm-cos-sdk-go
 - https://cloud.ibm.com/docs/cloud-object-storage/iam?topic=cloud-object-storage-service-credentials#service-credentials
 - https://cloud.ibm.com/docs/account?topic=account-assign-access-resources
 - https://cloud.ibm.com/iam/overview
+
+
+
+### 限定 bucket
+
+- 默认状态下，任何一个 Service ID (Service credential) 都可以访问全部 bucket
+- 需要手动限定 Service ID 的可访问范围
+- 方法： https://cloud.ibm.com/iam/ --> Service IDs --> 其中一个 ID --> Access policies --> Edit --> Resource type: bucket --> Resource ID: bucket名
 
 
 
