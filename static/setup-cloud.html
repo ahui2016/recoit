@@ -41,6 +41,13 @@
             </div>  
         </nav>
 
+        <div id="settings-exists" style="display: none;">
+          <div class="alert alert-primary" role="alert">
+            <p>IBM COS Settings already exists.</p>
+            <a id="show-form-btn" href="#">Click here to update it.</a>
+          </div>
+        </div>
+
         <ul>
             <li>注册 IBM Cloud (免费, 无需信用卡, 国内可直接访问)<br/>
                 <a href="https://cloud.ibm.com/registration">https://cloud.ibm.com/registration</a>
@@ -146,6 +153,25 @@
 $(function () {
     $('[data-toggle="tooltip"]').tooltip()
 })
+
+checkCloudSettings();
+
+function checkCloudSettings() {
+  ajaxGet('/api/check-cloud-settings', null, function() {
+    if (this.status == 200) {
+      $('#settings-exists').show();
+      $('ul').hide();
+      $('form').hide();
+    }
+  });
+}
+
+$('#show-form-btn').click(event => {
+  event.preventDefault();
+  $('#settings-exists').hide();
+  $('ul').show();
+  $('form').show();
+});
 
 $('#submit-btn').click(submit);
 

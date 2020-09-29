@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -72,6 +73,9 @@ func init() {
 	mustMkdir(cacheDir)
 	mustMkdir(cacheThumbDir)
 
+	// 尝试读取 settings 文件，如果读取失败，在这里先不处理错误。
+	_ = loadCosSettings()
+
 	// open the db here, close the db in main().
 	var err error
 	db, err = database.Open(dbPath)
@@ -88,6 +92,31 @@ func init() {
 		panic(err)
 	}
 	log.Print(dbPath)
+}
+
+func loadCosSettings() error {
+	if util.PathIsNotExist(ibmSettingsPath) {
+		return errors.New("The settings file is not found")
+	}
+	settings64, err := ioutil.ReadFile(ibmCosSettingsFileName)
+	if err != nil {
+		return nil
+	}
+	settings := ibm.NewSettingsFromJSON64(string(settings64))
+	cos = ibm.NewCOS(settings)
+	if err := cos.TryUploadDelete(); err != nil {
+		cos = nil
+		return errors.New("Wrong settings")
+	}
+	return nil
+}
+
+func isCosExist(w http.ResponseWriter) bool {
+	if cos == nil {
+		jsonMessage(w, "cos is null", 400)
+		return false
+	}
+	return true
 }
 
 func mustMkdir(name string) {

@@ -42,6 +42,7 @@ func main() {
 	http.HandleFunc("/api/thumb", createThumbHandler)
 	http.HandleFunc("/setup-cloud", setupCloudPage)
 	http.HandleFunc("/api/setup-cloud", setupCloudHandler)
+	http.HandleFunc("/api/check-cloud-settings", checkCloudSettings)
 
 	addr := "127.0.0.1:80"
 	fmt.Println(addr)
@@ -375,8 +376,8 @@ func setupCloudHandler(w http.ResponseWriter, r *http.Request) {
 		ApiKey:            strings.TrimSpace(r.FormValue("apikey")),
 		ServiceInstanceID: strings.TrimSpace(r.FormValue("serviceInstanceID")),
 		ServiceEndpoint:   strings.TrimSpace(r.FormValue("endpoint")),
+		BucketName:        strings.TrimSpace(r.FormValue("bucket-name")),
 		// BucketLocation:    strings.TrimSpace(r.FormValue("bucket-location")),
-		BucketName: strings.TrimSpace(r.FormValue("bucket-name")),
 	}
 	cos = ibm.NewCOS(&settings)
 	err := cos.TryUploadDelete()
@@ -394,3 +395,10 @@ func setupCloudHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // TODO: 检查 ibmSettingsPath 是否存在。
+func checkCloudSettings(w http.ResponseWriter, r *http.Request) {
+	if util.PathIsExist(ibmSettingsPath) {
+		jsonMsgOK(w)
+	} else {
+		jsonMsg404(w)
+	}
+}
