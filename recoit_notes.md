@@ -95,3 +95,10 @@
 - 位置: Bucket access policies
 - 由于服务器 IP 是固定的，限定 IP 可提高安全性。
 
+
+
+## Encryption
+
+- https://pkg.go.dev/crypto/cipher?tab=doc#example-NewGCM-Encrypt
+- https://pkg.go.dev/golang.org/x/crypto/scrypt
+
