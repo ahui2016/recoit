@@ -2,6 +2,7 @@ package model
 
 import (
 	"errors"
+	"strings"
 
 	"github.com/ahui2016/recoit/util"
 )
@@ -38,12 +39,18 @@ func NewReco(filename string) *Reco {
 		CreatedAt: now,
 		UpdatedAt: now,
 	}
-	if filename == "" {
+	reco.FileName = strings.TrimSpace(filename)
+	if reco.FileName == "" {
 		reco.FileType = NotFile
 		return reco
 	}
-	reco.FileName = filename
 	reco.FileType = util.TypeByFilename(filename)
+	return reco
+}
+
+func NewFirstReco() *Reco {
+	reco := NewReco("")
+	reco.ID = "1"
 	return reco
 }
 

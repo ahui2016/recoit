@@ -4,7 +4,6 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
-	"io"
 
 	"golang.org/x/crypto/scrypt"
 )
@@ -23,7 +22,7 @@ const (
 // 参考 https://pkg.go.dev/golang.org/x/crypto/scrypt
 func NewKey(passphrase string) []byte {
 	salt := make([]byte, saltSize)
-	if _, err := io.ReadFull(rand.Reader, salt); err != nil {
+	if _, err := rand.Read(salt); err != nil {
 		panic(err)
 	}
 	dk, err := scrypt.Key([]byte(passphrase), salt, 32768, 8, 1, keySize)
@@ -36,7 +35,7 @@ func NewKey(passphrase string) []byte {
 // NewNonce 生成一个随机的 nonce, 其长度为 nonceSize.
 func NewNonce() []byte {
 	nonce := make([]byte, nonceSize)
-	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
+	if _, err := rand.Read(nonce); err != nil {
 		panic(err)
 	}
 	return nonce

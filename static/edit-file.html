@@ -443,7 +443,7 @@ function updateFile(btn) {
       insertSuccessAlert('OK. File Updated.');
       hideAllSections();
     } else {
-      let errMsg = "Error: Update Failed. " + this.response.message;
+      let errMsg = "Error: " + this.response.message;
       insertErrorAlert(errMsg, $('#alert-update-tmpl'));
     }
   });

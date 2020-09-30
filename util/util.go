@@ -153,6 +153,7 @@ func TypeByFilename(filename string) string {
 	return mime.TypeByExtension(filepath.Ext(filename))
 }
 
+// DifferentSlice 对比新旧 slice 的差异，并返回需要新增的项目与需要删除的项目。
 func DifferentSlice(oldSlice, newSlice []string) (toAdd, toDelete []string) {
 	// newTags 里有，oldTags 里没有的，需要添加到数据库。
 	for _, newItem := range newSlice {
@@ -176,4 +177,25 @@ func SameSlice(a, b []string) bool {
 		return true
 	}
 	return false
+}
+
+func RandBool() bool {
+	max := big.NewInt(2)
+	n, _ := rand.Int(rand.Reader, max)
+	if n.Int64() == 0 {
+		return false
+	}
+	return true
+}
+
+func RandomString() string {
+	return Base64Encode(RandomBytes())
+}
+
+func RandomBytes() []byte {
+	someBytes := make([]byte, 255)
+	if _, err := rand.Read(someBytes); err != nil {
+		panic(err) // 因为这里有错误的可能性极小, 因此偷懒不处理.
+	}
+	return someBytes
 }

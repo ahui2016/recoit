@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/ahui2016/recoit/aesgcm"
 	"github.com/ahui2016/recoit/ibm"
 	"github.com/ahui2016/recoit/model"
 	"github.com/ahui2016/recoit/util"
@@ -40,9 +41,14 @@ func main() {
 	http.HandleFunc("/api/reco", getRecoHandler)
 	http.HandleFunc("/api/delete-reco", deleteRecoHandler)
 	http.HandleFunc("/api/thumb", createThumbHandler)
+
 	http.HandleFunc("/setup-cloud", setupCloudPage)
 	http.HandleFunc("/api/setup-cloud", setupCloudHandler)
 	http.HandleFunc("/api/check-cloud-settings", checkCloudSettings)
+
+	http.HandleFunc("/create-account", createAccountPage)
+	http.HandleFunc("/api/create-account", createAccountHandler)
+	http.HandleFunc("/api/is-account-exist", isAccountExist)
 
 	addr := "127.0.0.1:80"
 	fmt.Println(addr)
@@ -79,6 +85,10 @@ func tagPage(w http.ResponseWriter, r *http.Request) {
 
 func setupCloudPage(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, htmlFiles["setup-cloud"])
+}
+
+func createAccountPage(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprint(w, htmlFiles["create-account"])
 }
 
 func uploadHandler(w http.ResponseWriter, r *http.Request) {
@@ -121,28 +131,13 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 
 	// TODO: send to IBM COS
 
-	// 开始一个事务
-	tx, err := db.Begin(true)
-	if checkErr(w, err, 500) {
+	// 在 insertReco 里会添加 Reco.ID 到 Tag 数据表。
+	if checkErr(w, insertReco(w, reco), 500) {
 		return
 	}
-	defer tx.Rollback()
-
-	// Save the reco.
-	if checkErr(w, tx.Save(reco), 500) {
-		return
-	}
-
-	// Save tags.
-	if checkErr(w, addTags(w, tx, reco.Tags, reco.ID), 500) {
-		return
-	}
-
-	tx.Commit()
 
 	// 数据库操作成功，生成缓存文件（如果是图片，则顺便生成缩略图）。
-	// 不可在数据库操作结束之前生成缓存文件，
-	// 因为数据库操作发生错误时不应生成缓存文件。
+	// 不可在数据库操作结束之前生成缓存文件，因为数据库操作发生错误时不应生成缓存文件。
 	if checkErr(w, writeCacheFile(reco, fileContents), 500) {
 		return
 	}
@@ -250,15 +245,8 @@ func updateHandler(w http.ResponseWriter, r *http.Request) {
 	toAdd, toDelete := util.DifferentSlice(oldReco.Tags, reco.Tags)
 
 	// 删除标签（从 tag.RecoIDs 里删除 id）
-	for _, tagName := range toDelete {
-		tag := new(Tag)
-		if checkErr(w, tx.One("Name", tagName, tag), 500) {
-			return
-		}
-		tag.Remove(reco.ID) // 每一个 tag 都与该 reco.ID 脱离关系
-		if checkErr(w, tx.Update(tag), 500) {
-			return
-		}
+	if checkErr(w, deleteTags(w, tx, toDelete, reco.ID), 500) {
+		return
 	}
 
 	// 添加标签（将 id 添加到 tag.RecoIDs 里）
@@ -400,5 +388,32 @@ func checkCloudSettings(w http.ResponseWriter, r *http.Request) {
 		jsonMsgOK(w)
 	} else {
 		jsonMsg404(w)
+	}
+}
+
+func createAccountHandler(w http.ResponseWriter, r *http.Request) {
+	if isFirstRecoExist() {
+		jsonMessage(w, "已存在账号，不可重复创建", 400)
+		return
+	}
+	passphrase := r.FormValue("passphrase")
+	if passphrase == "" {
+		jsonMessage(w, "Password is empty.", 400)
+		return
+	}
+	key := aesgcm.NewKey(passphrase)
+	gcm := aesgcm.NewGCM(key)
+	ciphertext := gcm.Encrypt(util.RandomBytes())
+
+	firstReco := model.NewFirstReco()
+	firstReco.Message = util.Base64Encode(ciphertext)
+	checkErr(w, db.Save(firstReco), 500)
+}
+
+func isAccountExist(w http.ResponseWriter, r *http.Request) {
+	if isFirstRecoExist() {
+		jsonMessage(w, "true", 200)
+	} else {
+		jsonMessage(w, "false", 200)
 	}
 }

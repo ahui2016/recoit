@@ -43,8 +43,8 @@
 
         <div id="settings-exists" style="display: none;">
           <div class="alert alert-primary" role="alert">
-            <p>IBM COS Settings already exists.</p>
-            <a id="show-form-btn" href="#">Click here to update.</a>
+              IBM COS Settings already exists.<br/>
+              <a id="show-form-btn" href="#">Click here to update.</a>
           </div>
         </div>
 
@@ -139,9 +139,6 @@
         <template id="alert-success-tmpl">
           <div class="alert alert-success alert-dismissible fade show" role="alert">
             <span class="AlertMessage"></span>
-            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-              <span aria-hidden="true">&times;</span>
-            </button>
           </div>
         </template>
         
@@ -162,6 +159,7 @@ function checkCloudSettings() {
       $('#settings-exists').show();
       $('ul').hide();
       $('form').hide();
+      $('#foot-space').hide();
     }
   });
 }
@@ -171,6 +169,7 @@ $('#show-form-btn').click(event => {
   $('#settings-exists').hide();
   $('ul').show();
   $('form').show();
+  $('#foot-space').show();
 });
 
 $('#submit-btn').click(submit);
@@ -190,7 +189,7 @@ function submit() {
       $('ul').hide();
       $('form').hide();
     } else {
-      let errMsg = "Error: Upload Failed. " + this.response.message;
+      let errMsg = "Error: " + this.response.message;
       insertErrorAlert(errMsg);
     }
   });
