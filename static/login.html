@@ -8,7 +8,7 @@
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="/public/bootstrap.min.css">
 
-    <title>Create Account - Recoit</title>
+    <title>Login - Recoit</title>
 
     <!-- Optional JavaScript -->
     <!-- jQuery first, then Popper.js, then Bootstrap JS -->
@@ -23,7 +23,7 @@
   <body>
     <div class="container" style="max-width: 680px; min-width: 400px;">
         <nav class="navbar navbar-light bg-light mt-1 mb-3">
-            <span class="navbar-brand mb-0 h1">Create Account</span>
+            <span class="navbar-brand mb-0 h1">Login</span>
             <div class="btn-toolbar" role="toolbar" aria-label="nav bar">
               <div class="btn-group mr-2" role="group">
                 <a class="btn btn-outline-dark" href="index" data-toggle="tooltip" title="Index">
@@ -33,10 +33,10 @@
             </div>  
         </nav>
 
-        <div id="account-exists" style="display: none;">
+        <div id="account-not-exists" style="display: none;">
           <div class="alert alert-primary" role="alert">
-              You've created an account.<br/>
-              <a href="login">Click here to login</a>.
+              Your account is not setup yet.<br/>
+              <a href="create-account">Click here to create an account</a>.
           </div>
         </div>
 
@@ -44,9 +44,7 @@
 
             <div class="form-group">
                 <label for="passphrase">Master Password</label>
-                <input type="password" class="form-control text-monospace" id="passphrase" 
-                        oninput="display_pwd()" autofocus />
-                <div id="color-pwd" class="text-monospace" style="margin-left: 1px; padding-left: 0.75em;"></div>
+                <input type="password" class="form-control" id="passphrase" autofocus />
             </div>
 
           <!--错误提示-->
@@ -67,13 +65,19 @@
         </form>
 
         <!--成功提示-->
-        <template id="alert-success-tmpl">
-            <div class="alert alert-success alert-dismissible fade show" role="alert">
-                OK. Your account is created successfully.<br/>
-                <a href="login">Click here to login</a>.
-            </div>
-        </template>
-        
+        <div id="alert-success" class="alert alert-success" style="display: none;" role="alert">
+          已成功登入。
+        </div>
+
+        <!--下一步操作提示-->
+        <div id="alert-next" style="display: none;">
+          <div class="alert alert-primary" role="alert">
+            还需要设置云储存服务 (Cloud Storage Service) 才能正常使用本系统。<br/> 
+            请点击下面的按钮设置云账号。
+          </div>
+          <a class="btn btn-primary" href="setup-cloud">Next</a>
+        </div>
+      
     </div>
 
     <script>
@@ -82,12 +86,23 @@ $(function () {
     $('[data-toggle="tooltip"]').tooltip()
 })
 
-checkAccountExist();
+// 先检查 cloud settings 是否存在，将结果保存在一个全局变量中。
+// 这是一个异步操作，本应改成 promise 以保证执行顺序，但这里偷懒问题也不大。
+var isSettingsExist = false;
+checkCloudSettings();
+function checkCloudSettings() {
+  ajaxGet('/api/check-cloud-settings', null, function() {
+    if (this.status == 200) {
+      isSettingsExist = true;
+    }
+  });
+}
 
+checkAccountExist();
 function checkAccountExist() {
   ajaxGet('/api/is-account-exist', null, function() {
-    if (this.status == 200 && this.response.message == "true") {
-        $('#account-exists').show();
+    if (this.status == 200 && this.response.message == "false") {
+        $('#account-not-exists').show();
         $('form').hide();
     }
   });
@@ -101,19 +116,24 @@ function submit() {
   let passphrase = $('#passphrase').val();
   if (passphrase.length == 0) {
     insertErrorAlert("Error: Password is empty.");
+    $('#passphrase').focus();
     return;
   }
 
   let form = new FormData();
   form.append('passphrase', passphrase);
 
-  postForm(form, '/api/create-account', function() {
+  postForm(form, '/api/login', function() {
     if (this.status == 200) {
-      showSuccessAlert();
+      $('#alert-success').show();
       $('form').hide();
+      if (!isSettingsExist) {
+        $('#alert-next').show();
+      }
     } else {
       let errMsg = "Error: " + this.response.message;
       insertErrorAlert(errMsg);
+      $('#passphrase').focus();
     }
   });
 }
@@ -138,24 +158,6 @@ function postForm(form, url, onloadHandler) {
   });
 
   xhr.send(form);
-}
-
-function display_pwd() {
-  let pwd = document.getElementById('passphrase').value;
-  let pwd_html = "";
-  for (let n of pwd) {
-    if (isNaN(Number(n))) {
-      pwd_html += `<span style="color: blue;">${n}</span>`
-    } else {
-      pwd_html += `<span style="color: red;">${n}</span>`;
-    }
-  }
-  document.getElementById('color-pwd').innerHTML = pwd_html;
-}
-
-function showSuccessAlert() {
-  let errAlert = $('#alert-success-tmpl').contents().clone();
-  errAlert.insertAfter('#alert-success-tmpl');
 }
 
     </script>

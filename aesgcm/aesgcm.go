@@ -4,8 +4,7 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
-
-	"golang.org/x/crypto/scrypt"
+	"crypto/sha256"
 )
 
 const (
@@ -20,6 +19,7 @@ const (
 
 // NewKey 利用 scrypt 算法，将一个字符串转化为一个 key.
 // 参考 https://pkg.go.dev/golang.org/x/crypto/scrypt
+/*
 func NewKey(passphrase string) []byte {
 	salt := make([]byte, saltSize)
 	if _, err := rand.Read(salt); err != nil {
@@ -30,6 +30,13 @@ func NewKey(passphrase string) []byte {
 		panic(err)
 	}
 	return dk
+}
+*/
+
+func Sha256(passphrase string) []byte {
+	key := sha256.Sum256([]byte(passphrase))
+	return key[:]
+
 }
 
 // NewNonce 生成一个随机的 nonce, 其长度为 nonceSize.

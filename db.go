@@ -83,3 +83,9 @@ func isFirstRecoExist() bool {
 	}
 	return true
 }
+
+func getRecoByID(id string) (*Reco, error) {
+	reco := new(Reco)
+	err := db.One("ID", id, reco)
+	return reco, err
+}

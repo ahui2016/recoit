@@ -50,6 +50,11 @@ func main() {
 	http.HandleFunc("/api/create-account", createAccountHandler)
 	http.HandleFunc("/api/is-account-exist", isAccountExist)
 
+	http.HandleFunc("/login", loginPage)
+	http.HandleFunc("/api/login", loginHandler)
+
+	http.HandleFunc("/danger/delete-first-reco", deleteFirstReco)
+
 	addr := "127.0.0.1:80"
 	fmt.Println(addr)
 	log.Fatal(http.ListenAndServe(addr, nil))
@@ -89,6 +94,10 @@ func setupCloudPage(w http.ResponseWriter, r *http.Request) {
 
 func createAccountPage(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, htmlFiles["create-account"])
+}
+
+func loginPage(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprint(w, htmlFiles["login"])
 }
 
 func uploadHandler(w http.ResponseWriter, r *http.Request) {
@@ -391,6 +400,19 @@ func checkCloudSettings(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func isAccountExist(w http.ResponseWriter, r *http.Request) {
+	if isFirstRecoExist() {
+		jsonMessage(w, "true", 200)
+	} else {
+		jsonMessage(w, "false", 200)
+	}
+}
+
+func deleteFirstReco(w http.ResponseWriter, r *http.Request) {
+	reco := Reco{ID: "1"}
+	checkErr(w, db.DeleteStruct(&reco), 500)
+}
+
 func createAccountHandler(w http.ResponseWriter, r *http.Request) {
 	if isFirstRecoExist() {
 		jsonMessage(w, "已存在账号，不可重复创建", 400)
@@ -401,7 +423,7 @@ func createAccountHandler(w http.ResponseWriter, r *http.Request) {
 		jsonMessage(w, "Password is empty.", 400)
 		return
 	}
-	key := aesgcm.NewKey(passphrase)
+	key := aesgcm.Sha256(passphrase)
 	gcm := aesgcm.NewGCM(key)
 	ciphertext := gcm.Encrypt(util.RandomBytes())
 
@@ -410,10 +432,22 @@ func createAccountHandler(w http.ResponseWriter, r *http.Request) {
 	checkErr(w, db.Save(firstReco), 500)
 }
 
-func isAccountExist(w http.ResponseWriter, r *http.Request) {
-	if isFirstRecoExist() {
-		jsonMessage(w, "true", 200)
-	} else {
-		jsonMessage(w, "false", 200)
+func loginHandler(w http.ResponseWriter, r *http.Request) {
+	passphrase := r.FormValue("passphrase")
+	if passphrase == "" {
+		jsonMessage(w, "Password is empty.", 400)
+		return
 	}
+	reco, err := getRecoByID("1")
+	if checkErr(w, err, 500) {
+		return
+	}
+	key := aesgcm.Sha256(passphrase)
+	gcm := aesgcm.NewGCM(key) // 后续改成全局函数
+	ciphertext, err := util.Base64Decode(reco.Message)
+	if checkErr(w, err, 500) {
+		return
+	}
+	_, err = gcm.Decrypt(ciphertext)
+	checkErr(w, err, 500)
 }
