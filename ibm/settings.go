@@ -1,7 +1,6 @@
 package ibm
 
 import (
-	"encoding/base64"
 	"encoding/json"
 )
 
@@ -14,20 +13,16 @@ type Settings struct {
 	BucketName        string
 }
 
-// Encode to JSON, and encode to base64.
-func (settings *Settings) Encode() string {
-	settingsJson, err := json.Marshal(settings)
+// Encode to JSON.
+func (settings *Settings) Encode() []byte {
+	settingsJSON, err := json.Marshal(settings)
 	if err != nil {
 		panic(err)
 	}
-	return base64.StdEncoding.EncodeToString(settingsJson)
+	return settingsJSON
 }
 
-func NewSettingsFromJSON64(settings64 string) *Settings {
-	settingsJSON, err := base64.StdEncoding.DecodeString(settings64)
-	if err != nil {
-		panic(err)
-	}
+func NewSettingsFromJSON(settingsJSON []byte) *Settings {
 	settings := new(Settings)
 	if err := json.Unmarshal(settingsJSON, settings); err != nil {
 		panic(err)

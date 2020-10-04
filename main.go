@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/ahui2016/recoit/aesgcm"
 	"github.com/ahui2016/recoit/ibm"
 	"github.com/ahui2016/recoit/model"
 	"github.com/ahui2016/recoit/util"
@@ -376,22 +375,9 @@ func setupCloudHandler(w http.ResponseWriter, r *http.Request) {
 		BucketName:        strings.TrimSpace(r.FormValue("bucket-name")),
 		// BucketLocation:    strings.TrimSpace(r.FormValue("bucket-location")),
 	}
-	cos = ibm.NewCOS(&settings)
-	err := cos.TryUploadDelete()
-	if err != nil {
-		cos = nil
-	}
-	if checkErr(w, err, 500) {
-		return
-	}
-
-	// 如果没有错误，则将正确的 settings 写入硬盘。
-	settings64 := settings.Encode()
-	err = ioutil.WriteFile(ibmSettingsPath, []byte(settings64), 0600)
-	checkErr(w, err, 500)
+	checkErr(w, db.SetupCloud(&settings, ibmSettingsPath), 500)
 }
 
-// TODO: 检查 ibmSettingsPath 是否存在。
 func checkCloudSettings(w http.ResponseWriter, r *http.Request) {
 	if util.PathIsExist(ibmSettingsPath) {
 		jsonMsgOK(w)
@@ -401,7 +387,7 @@ func checkCloudSettings(w http.ResponseWriter, r *http.Request) {
 }
 
 func isAccountExist(w http.ResponseWriter, r *http.Request) {
-	if isFirstRecoExist() {
+	if db.IsFirstRecoExist() {
 		jsonMessage(w, "true", 200)
 	} else {
 		jsonMessage(w, "false", 200)
@@ -410,44 +396,15 @@ func isAccountExist(w http.ResponseWriter, r *http.Request) {
 
 func deleteFirstReco(w http.ResponseWriter, r *http.Request) {
 	reco := Reco{ID: "1"}
-	checkErr(w, db.DeleteStruct(&reco), 500)
+	checkErr(w, db.DB.DeleteStruct(&reco), 500)
 }
 
 func createAccountHandler(w http.ResponseWriter, r *http.Request) {
-	if isFirstRecoExist() {
-		jsonMessage(w, "已存在账号，不可重复创建", 400)
-		return
-	}
 	passphrase := r.FormValue("passphrase")
-	if passphrase == "" {
-		jsonMessage(w, "Password is empty.", 400)
-		return
-	}
-	key := aesgcm.Sha256(passphrase)
-	gcm := aesgcm.NewGCM(key)
-	ciphertext := gcm.Encrypt(util.RandomBytes())
-
-	firstReco := model.NewFirstReco()
-	firstReco.Message = util.Base64Encode(ciphertext)
-	checkErr(w, db.Save(firstReco), 500)
+	checkErr(w, db.InsertFirstReco(passphrase), 500)
 }
 
 func loginHandler(w http.ResponseWriter, r *http.Request) {
 	passphrase := r.FormValue("passphrase")
-	if passphrase == "" {
-		jsonMessage(w, "Password is empty.", 400)
-		return
-	}
-	reco, err := getRecoByID("1")
-	if checkErr(w, err, 500) {
-		return
-	}
-	key := aesgcm.Sha256(passphrase)
-	gcm := aesgcm.NewGCM(key) // 后续改成全局函数
-	ciphertext, err := util.Base64Decode(reco.Message)
-	if checkErr(w, err, 500) {
-		return
-	}
-	_, err = gcm.Decrypt(ciphertext)
-	checkErr(w, err, 500)
+	checkErr(w, db.Login(passphrase), 500)
 }

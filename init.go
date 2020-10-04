@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"errors"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -10,10 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/asdine/storm/v3"
-
 	"github.com/ahui2016/recoit/database"
-	"github.com/ahui2016/recoit/ibm"
 	"github.com/ahui2016/recoit/model"
 	"github.com/ahui2016/recoit/session"
 	"github.com/ahui2016/recoit/util"
@@ -42,14 +38,13 @@ var (
 	tempDir         string
 	cacheDir        string
 	cacheThumbDir   string
-	db              *storm.DB
-	cos             *ibm.COS
 )
 
 var (
 	passwordTry    = 0
 	htmlFiles      = make(map[string]string)
 	sessionManager = session.NewManager(maxAge)
+	db             = new(database.DB)
 )
 
 type (
@@ -73,42 +68,10 @@ func init() {
 	mustMkdir(cacheDir)
 	mustMkdir(cacheThumbDir)
 
-	// 尝试读取 settings 文件，如果读取失败，在这里先不处理错误。
-	_ = loadCosSettings()
-
 	// open the db here, close the db in main().
-	var err error
-	db, err = database.Open(dbPath)
-	if err != nil {
+	if err := db.Open(dbPath); err != nil {
 		panic(err)
 	}
-	if err := db.Init(&Reco{}); err != nil {
-		panic(err)
-	}
-	if err := db.Init(&Tag{}); err != nil {
-		panic(err)
-	}
-	if err := db.Init(&Collection{}); err != nil {
-		panic(err)
-	}
-	log.Print(dbPath)
-}
-
-func loadCosSettings() error {
-	if util.PathIsNotExist(ibmSettingsPath) {
-		return errors.New("The settings file is not found")
-	}
-	settings64, err := ioutil.ReadFile(ibmCosSettingsFileName)
-	if err != nil {
-		return nil
-	}
-	settings := ibm.NewSettingsFromJSON64(string(settings64))
-	cos = ibm.NewCOS(settings)
-	if err := cos.TryUploadDelete(); err != nil {
-		cos = nil
-		return errors.New("Wrong settings")
-	}
-	return nil
 }
 
 func isCosExist(w http.ResponseWriter) bool {

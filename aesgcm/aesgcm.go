@@ -58,13 +58,13 @@ func NewCipher(key []byte) cipher.Block {
 }
 
 // NewGCM 使用的 key 应该由 NewKey 生成。
-func NewGCM(key []byte) AEAD {
+func NewGCM(key []byte) *AEAD {
 	block := NewCipher(key)
 	gcm, err := cipher.NewGCM(block)
 	if err != nil {
 		panic(err)
 	}
-	return AEAD{gcm}
+	return &AEAD{gcm}
 }
 
 // AEAD 只是简单地包裹了 cipher.AEAD, 以便提供更方便的 Seal 和 Open 方法。

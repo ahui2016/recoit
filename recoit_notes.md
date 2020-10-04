@@ -102,3 +102,8 @@
 - https://pkg.go.dev/crypto/cipher?tab=doc#example-NewGCM-Encrypt
 - https://pkg.go.dev/golang.org/x/crypto/scrypt
 
+
+
+## 不加密版
+
+- 后续考虑出一个不加密版：方便，忘记密码也不怕。

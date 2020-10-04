@@ -1,15 +1,225 @@
 package database
 
 import (
+	"errors"
+	"io/ioutil"
+	"log"
+
+	"github.com/ahui2016/recoit/aesgcm"
+	"github.com/ahui2016/recoit/ibm"
+	"github.com/ahui2016/recoit/model"
+	"github.com/ahui2016/recoit/util"
 	"github.com/asdine/storm/v3"
 )
 
-func Open(path string) (*storm.DB, error) {
-	return storm.Open(path)
+type (
+	Reco       = model.Reco
+	Tag        = model.Tag
+	Collection = model.Collection
+)
+
+// DB 将数据库、加密、云储存三大功能汇于一身。
+type DB struct {
+	DB  *storm.DB
+	GCM *aesgcm.AEAD
+	COS *ibm.COS
 }
 
-// InsertTagsReco inserts a new reco to the Reco table,
-// and inserts the reco.ID to the Tag table.
-// func InsertTagsReco
+func (db *DB) Open(dbPath string) (err error) {
+	if db.DB, err = storm.Open(dbPath); err != nil {
+		return err
+	}
+	log.Print(dbPath)
+	return nil
+}
 
-// func addNewTags(tx storm.Node, id string, tags []string) {}
+func (db *DB) Close() error {
+	return db.DB.Close()
+}
+
+// InsertFirstReco 像数据库插入第一条数据，这个数据包含了该数据库的密码。
+// 一旦操作成功，从此必须输入正确密码 (DB.Login) 才能读写数据库。
+func (db *DB) InsertFirstReco(passphrase string) error {
+	if db.IsFirstRecoExist() {
+		return errors.New("已存在账号，不可重复创建")
+	}
+	if passphrase == "" {
+		return errors.New("password is empty")
+	}
+
+	// TODO: 密码要再包裹一层，方便修改密码。
+
+	key := aesgcm.Sha256(passphrase)
+	gcm := aesgcm.NewGCM(key)
+	ciphertext := gcm.Encrypt(util.RandomBytes())
+	firstReco := model.NewFirstReco()
+	firstReco.Message = util.Base64Encode(ciphertext)
+
+	if err := db.DB.Init(&Reco{}); err != nil {
+		return err
+	}
+	if err := db.DB.Init(&Tag{}); err != nil {
+		return err
+	}
+	if err := db.DB.Init(&Collection{}); err != nil {
+		return err
+	}
+	return db.DB.Save(firstReco)
+}
+
+func (db *DB) LoginLoadSettings(passphrase, settingsPath string) error {
+	err := db.Login(passphrase)
+	if err != nil {
+		return err
+	}
+	return db.loadSettings(settingsPath)
+}
+
+func (db *DB) Login(passphrase string) error {
+	if passphrase == "" {
+		return errors.New("password is empty")
+	}
+	reco, err := db.GetRecoByID("1")
+	if err != nil {
+		return err
+	}
+	key := aesgcm.Sha256(passphrase)
+	gcm := aesgcm.NewGCM(key)
+	ciphertext, err := util.Base64Decode(reco.Message)
+	if err != nil {
+		return err
+	}
+	if _, err = gcm.Decrypt(ciphertext); err != nil {
+		return err
+	}
+
+	// gcm 成功解密，数据库解密成功, 从此 db.GCM != nil
+	db.GCM = gcm
+	return nil
+}
+
+func (db *DB) SetupCloud(settings *ibm.Settings, settingsPath string) error {
+	if db.GCM == nil {
+		return errors.New("require login")
+	}
+	cos := ibm.NewCOS(settings)
+
+	// 检查 settings 是否正确。
+	if err := cos.TryUploadDelete(); err != nil {
+		return err
+	}
+
+	// 加密并写入硬盘。
+	settingsJSON := settings.Encode()
+	encrypted := db.GCM.Encrypt(settingsJSON)
+	if err := ioutil.WriteFile(settingsPath, encrypted, 0600); err != nil {
+		return err
+	}
+
+	// 云储存设置成功, 从此 db.COS != nil
+	db.COS = cos
+	return nil
+}
+
+// 检查云储存的 settings 是否已经保存在本地，如果是，则直接从本地导入 settings.
+// 如果本地没有 settings, 则不进行任何操作。
+func (db *DB) loadSettings(settingsPath string) error {
+	if util.PathIsNotExist(settingsPath) {
+		return nil
+	}
+	if db.GCM == nil {
+		return errors.New("require login")
+	}
+	encryptedSettings, err := ioutil.ReadFile(settingsPath)
+	if err != nil {
+		return err
+	}
+	settingsJSON, err := db.GCM.Decrypt(encryptedSettings)
+	if err != nil {
+		return err
+	}
+	settings := ibm.NewSettingsFromJSON(settingsJSON)
+	db.COS = ibm.NewCOS(settings)
+	return nil
+}
+
+func (db *DB) IsFirstRecoExist() bool {
+	var reco Reco
+	err := db.DB.One("ID", "1", &reco)
+	if err != nil && err != storm.ErrNotFound {
+		panic(err)
+	}
+	if err == storm.ErrNotFound {
+		return false
+	}
+	return true
+}
+
+func (db *DB) GetRecoByID(id string) (reco *Reco, err error) {
+	err = db.DB.One("ID", id, reco)
+	return
+}
+
+func (db *DB) AccessCountUp(id string, count int64) error {
+	reco := Reco{ID: id}
+	if err := db.DB.UpdateField(&reco, "AccessCount", count+1); err != nil {
+		return err
+	}
+	return db.DB.UpdateField(&reco, "AccessedAt", util.TimeNow())
+}
+
+func (db *DB) DeleteReco(id string) error {
+	reco := Reco{ID: id}
+	return db.DB.UpdateField(&reco, "DeletedAt", util.TimeNow())
+}
+
+func (db *DB) InsertReco(reco *Reco) error {
+	tx, err := db.DB.Begin(true)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	if err := tx.Save(reco); err != nil {
+		return err
+	}
+	if err := addTags(tx, reco.Tags, reco.ID); err != nil {
+		return err
+	}
+	return tx.Commit()
+}
+
+func addTags(tx storm.Node, tags []string, recoID string) error {
+	for _, tagName := range tags {
+		tag := new(Tag)
+		err := tx.One("Name", tagName, tag)
+		if err != nil && err != storm.ErrNotFound {
+			return err
+		}
+		if err == storm.ErrNotFound {
+			aTag := model.NewTag(tagName, recoID)
+			if err := tx.Save(aTag); err != nil {
+				return err
+			}
+			continue
+		}
+		// if found (err == nil)
+		tag.Add(recoID)
+		if err := tx.Update(tag); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func deleteTags(tx storm.Node, tagsToDelete []string, recoID string) error {
+	for _, tagName := range tagsToDelete {
+		tag := new(Tag)
+		if err := tx.One("Name", tagName, tag); err != nil {
+			return err
+		}
+		tag.Remove(recoID) // 每一个 tag 都与该 reco.ID 脱离关系
+		return tx.Update(tag)
+	}
+	return nil
+}
