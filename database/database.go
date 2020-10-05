@@ -1,9 +1,11 @@
 package database
 
 import (
+	"bytes"
 	"errors"
 	"io/ioutil"
 	"log"
+	"path/filepath"
 
 	"github.com/ahui2016/recoit/aesgcm"
 	"github.com/ahui2016/recoit/ibm"
@@ -20,15 +22,17 @@ type (
 
 // DB 将数据库、加密、云储存三大功能汇于一身。
 type DB struct {
-	DB  *storm.DB
-	GCM *aesgcm.AEAD
-	COS *ibm.COS
+	path string
+	DB   *storm.DB
+	GCM  *aesgcm.AEAD
+	COS  *ibm.COS
 }
 
 func (db *DB) Open(dbPath string) (err error) {
 	if db.DB, err = storm.Open(dbPath); err != nil {
 		return err
 	}
+	db.path = dbPath
 	log.Print(dbPath)
 	return nil
 }
@@ -46,7 +50,10 @@ func (db *DB) InsertFirstReco(passphrase string) error {
 	if passphrase == "" {
 		return errors.New("password is empty")
 	}
-	firstReco := newFirstReco(passphrase)
+	firstReco, err := db.newFirstReco(passphrase)
+	if err != nil {
+		return err
+	}
 	db.createIndexes()
 	return db.DB.Save(firstReco)
 }
@@ -54,7 +61,7 @@ func (db *DB) InsertFirstReco(passphrase string) error {
 // 用 userKey 来加密 masterKey.
 // userKey 用来加密解密 firstReco.Message,
 // masterKey 用来加密解密其他数据。
-func newFirstReco(passphrase string) *Reco {
+func (db *DB) newFirstReco(passphrase string) (*Reco, error) {
 	userKey := aesgcm.Sha256(passphrase)
 	userGCM := aesgcm.NewGCM(userKey)
 	masterKey := aesgcm.RandomKey()
@@ -62,7 +69,7 @@ func newFirstReco(passphrase string) *Reco {
 
 	firstReco := model.NewFirstReco()
 	firstReco.Message = util.Base64Encode(cipherMasterKey)
-	return firstReco
+	return firstReco, nil
 }
 
 func (db *DB) createIndexes() error {
@@ -137,6 +144,25 @@ func (db *DB) SetupCloud(settings *ibm.Settings, settingsPath string) error {
 
 	// 云储存设置成功, 从此 db.COS != nil
 	db.COS = cos
+
+	// 第一次将数据库文件上传到 COS, 之后找机会再上传当作备份。
+	if err := db.encryptUploadFile(db.path); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (db *DB) encryptUploadFile(filePath string) error {
+	content, err := ioutil.ReadFile(filePath)
+	if err != nil {
+		return err
+	}
+	name := filepath.Base(filePath)
+	ciphertext := db.GCM.Encrypt(content)
+	body := bytes.NewReader(ciphertext)
+	if _, err := db.COS.PutObject(name, body); err != nil {
+		return err
+	}
 	return nil
 }
 
