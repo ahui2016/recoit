@@ -64,6 +64,12 @@
           </button>
         </form>
 
+        <!-- 等待下一步结果 -->
+        <button id="next-spinner" class="btn btn-primary" style="display: none;" type="button" disabled>
+          Next
+          <span class="spinner-border spinner-border-sm" role="status"></span>
+        </button>
+
         <!--成功提示-->
         <div id="alert-success" class="alert alert-success" style="display: none;" role="alert">
           已成功登入。
@@ -86,18 +92,6 @@ $(function () {
     $('[data-toggle="tooltip"]').tooltip()
 })
 
-// 先检查 cloud settings 是否存在，将结果保存在一个全局变量中。
-// 这是一个异步操作，本应改成 promise 以保证执行顺序，但这里偷懒问题也不大。
-var isSettingsExist = false;
-checkCloudSettings();
-function checkCloudSettings() {
-  ajaxGet('/api/check-cloud-settings', null, function() {
-    if (this.status == 200) {
-      isSettingsExist = true;
-    }
-  });
-}
-
 checkAccountExist();
 function checkAccountExist() {
   ajaxGet('/api/is-account-exist', null, function() {
@@ -110,7 +104,7 @@ function checkAccountExist() {
 
 $('#submit-btn').click(submit);
 
-function submit() {
+function submit(event) {
   event.preventDefault();
 
   let passphrase = $('#passphrase').val();
@@ -125,11 +119,9 @@ function submit() {
 
   postForm(form, '/api/login', function() {
     if (this.status == 200) {
-      $('#alert-success').show();
+      $('#next-spinner').show();
       $('form').hide();
-      if (!isSettingsExist) {
-        $('#alert-next').show();
-      }
+      checkCOS();
     } else {
       let errMsg = "Error: " + this.response.message;
       insertErrorAlert(errMsg);
@@ -158,6 +150,20 @@ function postForm(form, url, onloadHandler) {
   });
 
   xhr.send(form);
+}
+
+// 这是一个异步操作，本应改成 promise 以保证执行顺序，但这里偷懒问题也不大。
+function checkCOS() {
+  ajaxGet('/api/check-cos', null, function() {
+    if (this.status == 200) {
+      $('#next-spinner').hide();
+      $('#alert-success').show();
+    } else {
+      $('#next-spinner').hide();
+      $('#alert-success').show();
+      $('#alert-next').show();
+    }
+  });
 }
 
     </script>

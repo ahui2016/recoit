@@ -51,6 +51,7 @@ func main() {
 
 	http.HandleFunc("/login", loginPage)
 	http.HandleFunc("/api/login", loginHandler)
+	http.HandleFunc("/api/check-cos", checkCOS)
 
 	http.HandleFunc("/danger/delete-first-reco", deleteFirstReco)
 
@@ -140,7 +141,7 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 	// TODO: send to IBM COS
 
 	// 在 insertReco 里会添加 Reco.ID 到 Tag 数据表。
-	if checkErr(w, insertReco(w, reco), 500) {
+	if checkErr(w, db.InsertReco(reco), 500) {
 		return
 	}
 
@@ -160,8 +161,8 @@ func updateHandler(w http.ResponseWriter, r *http.Request) {
 
 	// 获取数据库中的 reco
 	id := r.FormValue("id")
-	var reco Reco
-	if checkErr(w, db.One("ID", id, &reco), 500) {
+	reco, err := db.GetRecoByID(id)
+	if checkErr(w, err, 500) {
 		return
 	}
 
@@ -218,12 +219,12 @@ func updateHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 至此，reco 已被更新，重新从数据库获取 reco 用来对比有无更新。
-	var oldReco Reco
-	if checkErr(w, db.One("ID", id, &oldReco), 500) {
+	oldReco, err := db.GetRecoByID(id)
+	if checkErr(w, err, 500) {
 		return
 	}
 
-	if oldReco.EqualContent(&reco) {
+	if oldReco.EqualContent(reco) {
 		jsonMessage(w, "无任何变化", 401)
 		return
 	}
@@ -235,38 +236,11 @@ func updateHandler(w http.ResponseWriter, r *http.Request) {
 
 	// TODO: update to IBM COS
 
-	tx, err := db.Begin(true)
-	if checkErr(w, err, 500) {
-		return
-	}
-	defer tx.Rollback()
-
-	// 删除再重写，相当于一次完全的更新。
-	// 因为 storm 的 update 方法不可更新空值。
-	if checkErr(w, tx.DeleteStruct(&oldReco), 500) {
-		return
-	}
-	if checkErr(w, tx.Save(&reco), 500) {
-		return
-	}
-
-	toAdd, toDelete := util.DifferentSlice(oldReco.Tags, reco.Tags)
-
-	// 删除标签（从 tag.RecoIDs 里删除 id）
-	if checkErr(w, deleteTags(w, tx, toDelete, reco.ID), 500) {
-		return
-	}
-
-	// 添加标签（将 id 添加到 tag.RecoIDs 里）
-	if checkErr(w, addTags(w, tx, toAdd, reco.ID), 500) {
-		return
-	}
-
-	tx.Commit()
+	db.UpdateReco(oldReco, reco)
 
 	// 更新缓存文件
 	if reco.FileType != model.NotFile && reco.Checksum != oldReco.Checksum {
-		if checkErr(w, writeCacheFile(&reco, fileContents), 500) {
+		if checkErr(w, writeCacheFile(reco, fileContents), 500) {
 			return
 		}
 	}
@@ -275,7 +249,7 @@ func updateHandler(w http.ResponseWriter, r *http.Request) {
 func checksumHandler(w http.ResponseWriter, r *http.Request) {
 	hashHex := r.FormValue("hashHex")
 	var reco Reco
-	err := db.One("Checksum", hashHex, &reco)
+	err := db.DB.One("Checksum", hashHex, &reco)
 	if err == storm.ErrNotFound {
 		jsonMsgOK(w)
 		return
@@ -290,11 +264,11 @@ func checksumHandler(w http.ResponseWriter, r *http.Request) {
 
 func getRecoHandler(w http.ResponseWriter, r *http.Request) {
 	id := r.FormValue("id")
-	var reco Reco
-	if checkErr(w, db.One("ID", id, &reco), 500) {
+	reco, err := db.GetRecoByID(id)
+	if checkErr(w, err, 500) {
 		return
 	}
-	if checkErr(w, accessUpdate(id, reco.AccessCount), 500) {
+	if checkErr(w, db.AccessCountUp(id, reco.AccessCount), 500) {
 		return
 	}
 	reco.Checksum = ""
@@ -303,7 +277,7 @@ func getRecoHandler(w http.ResponseWriter, r *http.Request) {
 
 func getAllRecos(w http.ResponseWriter, r *http.Request) {
 	var all []Reco
-	err := db.Select(q.Eq("DeletedAt", "")).OrderBy("UpdatedAt").Find(&all)
+	err := db.DB.Select(q.Eq("DeletedAt", "")).OrderBy("UpdatedAt").Find(&all)
 	if checkErr(w, err, 500) {
 		return
 	}
@@ -315,7 +289,7 @@ func getAllRecos(w http.ResponseWriter, r *http.Request) {
 
 func deleteRecoHandler(w http.ResponseWriter, r *http.Request) {
 	id := r.FormValue("id")
-	if checkErr(w, deleteReco(id), 500) {
+	if checkErr(w, db.DeleteReco(id), 500) {
 		return
 	}
 	jsonMsgOK(w)
@@ -351,14 +325,14 @@ func getRecosByTag(w http.ResponseWriter, r *http.Request) {
 		jsonMessage(w, "tag's name is empty", 400)
 		return
 	}
-	tag := new(Tag)
-	if checkErr(w, db.One("Name", tagName, tag), 500) {
+	tag, err := db.GetTagByName(tagName)
+	if checkErr(w, err, 500) {
 		return
 	}
 	var recos []*Reco
 	for _, id := range tag.RecoIDs {
-		reco := new(Reco)
-		if checkErr(w, db.One("ID", id, reco), 500) {
+		reco, err := db.GetRecoByID(id)
+		if checkErr(w, err, 500) {
 			return
 		}
 		reco.Checksum = ""
@@ -386,6 +360,14 @@ func checkCloudSettings(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func checkCOS(w http.ResponseWriter, r *http.Request) {
+	if db.COS == nil {
+		jsonMsg404(w)
+	} else {
+		jsonMsgOK(w)
+	}
+}
+
 func isAccountExist(w http.ResponseWriter, r *http.Request) {
 	if db.IsFirstRecoExist() {
 		jsonMessage(w, "true", 200)
@@ -406,5 +388,5 @@ func createAccountHandler(w http.ResponseWriter, r *http.Request) {
 
 func loginHandler(w http.ResponseWriter, r *http.Request) {
 	passphrase := r.FormValue("passphrase")
-	checkErr(w, db.Login(passphrase), 500)
+	checkErr(w, db.LoginLoadSettings(passphrase, ibmSettingsPath), 500)
 }

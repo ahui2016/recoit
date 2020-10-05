@@ -155,9 +155,10 @@ func (db *DB) IsFirstRecoExist() bool {
 	return true
 }
 
-func (db *DB) GetRecoByID(id string) (reco *Reco, err error) {
-	err = db.DB.One("ID", id, reco)
-	return
+func (db *DB) GetRecoByID(id string) (*Reco, error) {
+	reco := new(Reco)
+	err := db.DB.One("ID", id, reco)
+	return reco, err
 }
 
 func (db *DB) AccessCountUp(id string, count int64) error {
@@ -187,6 +188,38 @@ func (db *DB) InsertReco(reco *Reco) error {
 		return err
 	}
 	return tx.Commit()
+}
+
+func (db *DB) UpdateReco(oldReco, reco *Reco) error {
+	tx, err := db.DB.Begin(true)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	// 删除再重写，相当于一次完全的更新。
+	// 因为 storm 的 update 方法不可更新空值。
+	if err := tx.DeleteStruct(oldReco); err != nil {
+		return err
+	}
+	if err := tx.Save(reco); err != nil {
+		return err
+	}
+
+	toAdd, toDelete := util.DifferentSlice(oldReco.Tags, reco.Tags)
+
+	// 删除标签（从 tag.RecoIDs 里删除 id）
+	if err := deleteTags(tx, toDelete, reco.ID); err != nil {
+		return err
+	}
+
+	// 添加标签（将 id 添加到 tag.RecoIDs 里）
+	if err := addTags(tx, toAdd, reco.ID); err != nil {
+		return err
+	}
+
+	tx.Commit()
+	return nil
 }
 
 func addTags(tx storm.Node, tags []string, recoID string) error {
@@ -222,4 +255,10 @@ func deleteTags(tx storm.Node, tagsToDelete []string, recoID string) error {
 		return tx.Update(tag)
 	}
 	return nil
+}
+
+func (db *DB) GetTagByName(name string) (*Tag, error) {
+	tag := new(Tag)
+	err := db.DB.One("Name", name, tag)
+	return tag, err
 }

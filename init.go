@@ -74,14 +74,6 @@ func init() {
 	}
 }
 
-func isCosExist(w http.ResponseWriter) bool {
-	if cos == nil {
-		jsonMessage(w, "cos is null", 400)
-		return false
-	}
-	return true
-}
-
 func mustMkdir(name string) {
 	if util.PathIsNotExist(name) {
 		if err := os.Mkdir(name, 0600); err != nil {

@@ -128,7 +128,8 @@
             </div>
           </template>
 
-          <button id="submit-btn" type="submit" class="btn btn-primary">Submit</button>
+          <input type="submit" disabled hidden />
+          <button id="submit-btn" type="button" class="btn btn-primary">Submit</button>
           <button id="submit-spinner" class="btn btn-primary" style="display: none;" type="button" disabled>
             Submit
             <span class="spinner-border spinner-border-sm" role="status"></span>
@@ -174,7 +175,7 @@ $('#show-form-btn').click(event => {
 
 $('#submit-btn').click(submit);
 
-function submit() {
+function submit(event) {
   event.preventDefault();
   let form = new FormData();
   form.append('apikey', $('#apikey').val());
