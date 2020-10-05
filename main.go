@@ -30,13 +30,17 @@ func main() {
 	http.HandleFunc("/", homePage)
 	http.HandleFunc("/index", indexPage)
 	http.HandleFunc("/api/all-recos", getAllRecos)
+
 	http.HandleFunc("/tag", tagPage)
 	http.HandleFunc("/api/tag", getRecosByTag)
+
 	http.HandleFunc("/add-file", addFilePage)
-	http.HandleFunc("/edit-file", editFilePage)
 	http.HandleFunc("/api/upload-file", uploadHandler)
-	http.HandleFunc("/api/update-file", updateHandler)
 	http.HandleFunc("/api/checksum", checksumHandler)
+
+	http.HandleFunc("/edit-file", editFilePage)
+	http.HandleFunc("/api/update-file", updateHandler)
+
 	http.HandleFunc("/api/reco", getRecoHandler)
 	http.HandleFunc("/api/delete-reco", deleteRecoHandler)
 	http.HandleFunc("/api/thumb", createThumbHandler)

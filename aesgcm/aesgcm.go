@@ -5,6 +5,9 @@ import (
 	"crypto/cipher"
 	"crypto/rand"
 	"crypto/sha256"
+
+	"github.com/ahui2016/recoit/util"
+	"golang.org/x/crypto/scrypt"
 )
 
 const (
@@ -17,21 +20,19 @@ const (
 	nonceSize = 12
 )
 
-// NewKey 利用 scrypt 算法，将一个字符串转化为一个 key.
+// RandomKey 利用 scrypt 算法，随机生成一个 key.
 // 参考 https://pkg.go.dev/golang.org/x/crypto/scrypt
-/*
-func NewKey(passphrase string) []byte {
+func RandomKey() []byte {
 	salt := make([]byte, saltSize)
 	if _, err := rand.Read(salt); err != nil {
 		panic(err)
 	}
-	dk, err := scrypt.Key([]byte(passphrase), salt, 32768, 8, 1, keySize)
+	dk, err := scrypt.Key(util.RandomBytes(), salt, 32768, 8, 1, keySize)
 	if err != nil {
 		panic(err)
 	}
 	return dk
 }
-*/
 
 func Sha256(passphrase string) []byte {
 	key := sha256.Sum256([]byte(passphrase))

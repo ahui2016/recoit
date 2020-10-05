@@ -37,7 +37,7 @@ func (db *DB) Close() error {
 	return db.DB.Close()
 }
 
-// InsertFirstReco 像数据库插入第一条数据，这个数据包含了该数据库的密码。
+// InsertFirstReco 向数据库插入第一条数据，这个数据包含了该数据库的密码。
 // 一旦操作成功，从此必须输入正确密码 (DB.Login) 才能读写数据库。
 func (db *DB) InsertFirstReco(passphrase string) error {
 	if db.IsFirstRecoExist() {
@@ -46,15 +46,26 @@ func (db *DB) InsertFirstReco(passphrase string) error {
 	if passphrase == "" {
 		return errors.New("password is empty")
 	}
+	firstReco := newFirstReco(passphrase)
+	db.createIndexes()
+	return db.DB.Save(firstReco)
+}
 
-	// TODO: 密码要再包裹一层，方便修改密码。
+// 用 userKey 来加密 masterKey.
+// userKey 用来加密解密 firstReco.Message,
+// masterKey 用来加密解密其他数据。
+func newFirstReco(passphrase string) *Reco {
+	userKey := aesgcm.Sha256(passphrase)
+	userGCM := aesgcm.NewGCM(userKey)
+	masterKey := aesgcm.RandomKey()
+	cipherMasterKey := userGCM.Encrypt(masterKey)
 
-	key := aesgcm.Sha256(passphrase)
-	gcm := aesgcm.NewGCM(key)
-	ciphertext := gcm.Encrypt(util.RandomBytes())
 	firstReco := model.NewFirstReco()
-	firstReco.Message = util.Base64Encode(ciphertext)
+	firstReco.Message = util.Base64Encode(cipherMasterKey)
+	return firstReco
+}
 
+func (db *DB) createIndexes() error {
 	if err := db.DB.Init(&Reco{}); err != nil {
 		return err
 	}
@@ -64,7 +75,7 @@ func (db *DB) InsertFirstReco(passphrase string) error {
 	if err := db.DB.Init(&Collection{}); err != nil {
 		return err
 	}
-	return db.DB.Save(firstReco)
+	return nil
 }
 
 func (db *DB) LoginLoadSettings(passphrase, settingsPath string) error {
@@ -83,19 +94,27 @@ func (db *DB) Login(passphrase string) error {
 	if err != nil {
 		return err
 	}
-	key := aesgcm.Sha256(passphrase)
-	gcm := aesgcm.NewGCM(key)
-	ciphertext, err := util.Base64Decode(reco.Message)
+	db.GCM, err = decryptFirstReco(passphrase, reco.Message)
 	if err != nil {
 		return err
 	}
-	if _, err = gcm.Decrypt(ciphertext); err != nil {
-		return err
-	}
-
-	// gcm 成功解密，数据库解密成功, 从此 db.GCM != nil
-	db.GCM = gcm
 	return nil
+}
+
+func decryptFirstReco(passphrase, key64 string) (*aesgcm.AEAD, error) {
+	userKey := aesgcm.Sha256(passphrase)
+	userGCM := aesgcm.NewGCM(userKey)
+	cipherMasterKey, err := util.Base64Decode(key64)
+	if err != nil {
+		return nil, err
+	}
+	masterKey, err := userGCM.Decrypt(cipherMasterKey)
+	if err != nil {
+		return nil, err
+	}
+	// 解密成功，获得 masterKey
+	gcm := aesgcm.NewGCM(masterKey)
+	return gcm, nil
 }
 
 func (db *DB) SetupCloud(settings *ibm.Settings, settingsPath string) error {
