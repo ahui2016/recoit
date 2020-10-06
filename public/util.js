@@ -105,6 +105,9 @@ function getNewTags() {
 }
 
 function addPrefix(arr, prefix) {
+  if (arr == null) {
+    return '';
+  }
   return arr.map(x => prefix + x).join(' ');
 }
 

@@ -14,6 +14,7 @@ import (
 	"github.com/asdine/storm/v3"
 )
 
+// Types from model.
 type (
 	Reco       = model.Reco
 	Tag        = model.Tag
@@ -28,6 +29,7 @@ type DB struct {
 	COS  *ibm.COS
 }
 
+// Open .
 func (db *DB) Open(dbPath string) (err error) {
 	if db.DB, err = storm.Open(dbPath); err != nil {
 		return err
@@ -37,6 +39,7 @@ func (db *DB) Open(dbPath string) (err error) {
 	return nil
 }
 
+// Close .
 func (db *DB) Close() error {
 	return db.DB.Close()
 }
@@ -85,6 +88,7 @@ func (db *DB) createIndexes() error {
 	return nil
 }
 
+// LoginLoadSettings .
 func (db *DB) LoginLoadSettings(passphrase, settingsPath string) error {
 	err := db.Login(passphrase)
 	if err != nil {
@@ -93,6 +97,7 @@ func (db *DB) LoginLoadSettings(passphrase, settingsPath string) error {
 	return db.loadSettings(settingsPath)
 }
 
+// Login .
 func (db *DB) Login(passphrase string) error {
 	if passphrase == "" {
 		return errors.New("password is empty")
@@ -124,6 +129,7 @@ func decryptFirstReco(passphrase, key64 string) (*aesgcm.AEAD, error) {
 	return gcm, nil
 }
 
+// SetupCloud .
 func (db *DB) SetupCloud(settings *ibm.Settings, settingsPath string) error {
 	if db.GCM == nil {
 		return errors.New("require login")
@@ -188,6 +194,7 @@ func (db *DB) loadSettings(settingsPath string) error {
 	return nil
 }
 
+// IsFirstRecoExist .
 func (db *DB) IsFirstRecoExist() bool {
 	var reco Reco
 	err := db.DB.One("ID", "1", &reco)
@@ -200,12 +207,14 @@ func (db *DB) IsFirstRecoExist() bool {
 	return true
 }
 
+// GetRecoByID .
 func (db *DB) GetRecoByID(id string) (*Reco, error) {
 	reco := new(Reco)
 	err := db.DB.One("ID", id, reco)
 	return reco, err
 }
 
+// AccessCountUp .
 func (db *DB) AccessCountUp(id string, count int64) error {
 	reco := Reco{ID: id}
 	if err := db.DB.UpdateField(&reco, "AccessCount", count+1); err != nil {
@@ -214,6 +223,7 @@ func (db *DB) AccessCountUp(id string, count int64) error {
 	return db.DB.UpdateField(&reco, "AccessedAt", util.TimeNow())
 }
 
+// DeleteReco .
 func (db *DB) DeleteReco(id string) error {
 	reco := Reco{ID: id}
 	return db.DB.UpdateField(&reco, "DeletedAt", util.TimeNow())
@@ -250,12 +260,32 @@ func (db *DB) encryptUpload(objName string, content []byte) error {
 	return nil
 }
 
-// DeleteObject 删除 COS 里的数据。
+// DownloadDecrypt 下载、解密、写文件。
+func (db *DB) DownloadDecrypt(objName, filePath string) error {
+	body, err := db.COS.GetObjectBody(objName)
+	if err != nil {
+		return err
+	}
+	defer body.Close()
+
+	ciphertext, err := ioutil.ReadAll(body)
+	if err != nil {
+		return err
+	}
+	fileContents, err := db.GCM.Decrypt(ciphertext)
+	if err != nil {
+		return err
+	}
+	return ioutil.WriteFile(filePath, fileContents, 0600)
+}
+
+// deleteObject 删除 COS 里的数据。
 func (db *DB) deleteObject(objName string) error {
 	_, err := db.COS.DeleteObject(objName)
 	return err
 }
 
+// UpdateReco .
 func (db *DB) UpdateReco(oldReco, reco *Reco) error {
 	tx, err := db.DB.Begin(true)
 	if err != nil {
@@ -323,6 +353,7 @@ func deleteTags(tx storm.Node, tagsToDelete []string, recoID string) error {
 	return nil
 }
 
+// GetTagByName .
 func (db *DB) GetTagByName(name string) (*Tag, error) {
 	tag := new(Tag)
 	err := db.DB.One("Name", name, tag)

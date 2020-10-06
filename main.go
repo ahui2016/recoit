@@ -291,10 +291,7 @@ func getAllRecos(w http.ResponseWriter, r *http.Request) {
 
 func deleteRecoHandler(w http.ResponseWriter, r *http.Request) {
 	id := r.FormValue("id")
-	if checkErr(w, db.DeleteReco(id), 500) {
-		return
-	}
-	jsonMsgOK(w)
+	checkErr(w, db.DeleteReco(id), 500)
 }
 
 func createThumbHandler(w http.ResponseWriter, r *http.Request) {
@@ -311,14 +308,19 @@ func createThumbHandler(w http.ResponseWriter, r *http.Request) {
 
 	if util.PathIsNotExist(thumbPath) {
 
-		// 如果 imgPath 不存在，则从 COS 获取文件（暂时省略，需要补充）
+		// 如果 imgPath 不存在，则从 COS 获取文件
+		if util.PathIsNotExist(imgPath) {
+			err := db.DownloadDecrypt(addRecoExt(id), imgPath)
+			if checkErr(w, err, 500) {
+				return
+			}
+		}
 
 		err := util.CreateThumb(imgPath, thumbPath)
 		if checkErr(w, err, 500) {
 			return
 		}
 	}
-	jsonMsgOK(w)
 }
 
 func getRecosByTag(w http.ResponseWriter, r *http.Request) {

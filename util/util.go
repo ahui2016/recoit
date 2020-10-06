@@ -19,10 +19,11 @@ import (
 )
 
 const (
-	// 需要根据服务器的具体时区来设定正确的时区
+	// ISO8601 需要根据服务器的具体时区来设定正确的时区
 	ISO8601 = "2006-01-02T15:04:05.999+08:00"
 )
 
+// NewID .
 func NewID() string {
 	var max int64 = 100_000_000
 	n, err := rand.Int(rand.Reader, big.NewInt(max))
@@ -34,14 +35,17 @@ func NewID() string {
 	return strconv.FormatInt(idInt64, 36)
 }
 
+// Base64Encode .
 func Base64Encode(data []byte) string {
 	return base64.StdEncoding.EncodeToString(data)
 }
 
+// Base64Decode .
 func Base64Decode(s string) ([]byte, error) {
 	return base64.StdEncoding.DecodeString(s)
 }
 
+// NewFileScanner .
 func NewFileScanner(fullPath string) (*bufio.Scanner, *os.File, error) {
 	file, err := os.Open(fullPath)
 	if err != nil {
@@ -50,6 +54,7 @@ func NewFileScanner(fullPath string) (*bufio.Scanner, *os.File, error) {
 	return bufio.NewScanner(file), file, nil
 }
 
+// GetPathsByExt .
 func GetPathsByExt(dir, ext string) ([]string, error) {
 	pattern := filepath.Join(dir, "*"+ext)
 	filePaths, err := filepath.Glob(pattern)
@@ -60,16 +65,19 @@ func GetPathsByExt(dir, ext string) ([]string, error) {
 	return filePaths, nil
 }
 
+// TimestampFilename .
 func TimestampFilename(ext string) string {
 	name := strconv.FormatInt(time.Now().UnixNano(), 10)
 	return name + ext
 }
 
+// BufWriteln .
 func BufWriteln(w *bufio.Writer, box64 string) (err error) {
 	_, err = w.WriteString(box64 + "\n")
 	return
 }
 
+// DeleteFiles .
 func DeleteFiles(filePaths []string) error {
 	for _, f := range filePaths {
 		if err := os.Remove(f); err != nil {
@@ -79,15 +87,18 @@ func DeleteFiles(filePaths []string) error {
 	return nil
 }
 
+// TimeNow .
 func TimeNow() string {
 	return time.Now().Format(ISO8601)
 }
 
+// Sha256Hex .
 func Sha256Hex(data []byte) string {
 	sum := sha256.Sum256(data)
 	return hex.EncodeToString(sum[:])
 }
 
+// HasString .
 func HasString(slice []string, item string) bool {
 	i := StringIndex(slice, item)
 	if i < 0 {
@@ -96,6 +107,7 @@ func HasString(slice []string, item string) bool {
 	return true
 }
 
+// StringIndex .
 func StringIndex(slice []string, item string) int {
 	for i, v := range slice {
 		if v == item {
@@ -105,10 +117,12 @@ func StringIndex(slice []string, item string) int {
 	return -1
 }
 
+// DeleteFromSlice .
 func DeleteFromSlice(slice []string, i int) []string {
 	return append(slice[:i], slice[i+1:]...)
 }
 
+// PathIsNotExist .
 func PathIsNotExist(name string) bool {
 	_, err := os.Lstat(name)
 	if os.IsNotExist(err) {
@@ -120,11 +134,22 @@ func PathIsNotExist(name string) bool {
 	return false
 }
 
+// PathIsExist .
 func PathIsExist(name string) bool {
 	return !PathIsNotExist(name)
 }
 
-func CreateFile(filePath string, src io.Reader) (int64, *os.File, error) {
+// CreateFile 会自动关闭 file.
+func CreateFile(filePath string, src io.Reader) error {
+	_, file, err := CreateReturnFile(filePath, src)
+	if err == nil {
+		file.Close()
+	}
+	return err
+}
+
+// CreateReturnFile 会返回 file, 要记得关闭资源。
+func CreateReturnFile(filePath string, src io.Reader) (int64, *os.File, error) {
 	f, err := os.OpenFile(filePath, os.O_RDWR|os.O_CREATE, 0600)
 	if err != nil {
 		return 0, nil, err
@@ -136,19 +161,16 @@ func CreateFile(filePath string, src io.Reader) (int64, *os.File, error) {
 	return size, f, nil
 }
 
+// CreateThumb .
 func CreateThumb(imgPath, thumbPath string) error {
 	buf, err := graphics.Thumbnail(imgPath)
 	if err != nil {
 		return err
 	}
-	if _, f, err := CreateFile(thumbPath, buf); err != nil {
-		return err
-	} else {
-		f.Close()
-	}
-	return nil
+	return CreateFile(thumbPath, buf)
 }
 
+// TypeByFilename .
 func TypeByFilename(filename string) string {
 	return mime.TypeByExtension(filepath.Ext(filename))
 }
@@ -179,6 +201,7 @@ func SameSlice(a, b []string) bool {
 	return false
 }
 
+// RandBool .
 func RandBool() bool {
 	max := big.NewInt(2)
 	n, _ := rand.Int(rand.Reader, max)
@@ -188,10 +211,12 @@ func RandBool() bool {
 	return true
 }
 
+// RandomString .
 func RandomString() string {
 	return Base64Encode(RandomBytes())
 }
 
+// RandomBytes .
 func RandomBytes() []byte {
 	someBytes := make([]byte, 255)
 	if _, err := rand.Read(someBytes); err != nil {

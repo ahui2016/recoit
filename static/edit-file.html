@@ -53,6 +53,26 @@
           </div>
       </nav>
 
+      <!--成功提示-->
+      <template id="alert-success-tmpl">
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <span class="AlertMessage"></span>
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+      </template>
+
+      <!--错误提示-->
+      <template id="alert-danger-tmpl">
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <span class="AlertMessage"></span>
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+      </template>
+
       <div id="section-view" style="margin: 50px 0 50px 0;">
         <img id="thumbnail" class="img-thumbnail" alt="click to load the thumbnail" 
             style="width: 138px; height: 138px; display: none; cursor: pointer;">
@@ -90,26 +110,6 @@
           <button id="delete-yes-btn">Yes</button> <button id="delete-no-btn">No</button>
         </span>
       </div>
-
-      <!--成功提示-->
-      <template id="alert-success-tmpl">
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            <span class="AlertMessage"></span>
-            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-              <span aria-hidden="true">&times;</span>
-            </button>
-        </div>
-      </template>
-
-      <!--错误提示-->
-      <template id="alert-danger-tmpl">
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            <span class="AlertMessage"></span>
-            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-              <span aria-hidden="true">&times;</span>
-            </button>
-        </div>
-      </template>
 
       <form id="file-form" autocomplete="off" style="margin: 50px 0 50px 0; display: none;">
 
@@ -178,7 +178,7 @@
           </ul>      
         </div>
 
-        <!--错误提示-->
+        <!--更新时的错误提示-->
         <template id="alert-update-tmpl">
           <div class="alert alert-danger alert-dismissible fade show" role="alert">
               <span class="AlertMessage"></span>
@@ -275,10 +275,7 @@ function setFormData(reco) {
         form.append('id', id);
         ajaxPost(form, '/api/thumb', null, function() {
           if (this.status == 200) {
-            $('#thumbnail')
-              .off('click')
-              .css('cursor', '')
-              .attr('src', thumbUrlDate(id));
+            $('#thumbnail').attr('src', thumbUrlDate(id));
           } else {
             insertErrorAlert(this.response.message);
           }
