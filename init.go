@@ -11,7 +11,6 @@ import (
 
 	"github.com/ahui2016/recoit/database"
 	"github.com/ahui2016/recoit/model"
-	"github.com/ahui2016/recoit/session"
 	"github.com/ahui2016/recoit/util"
 )
 
@@ -26,7 +25,7 @@ const (
 	recoFileExt            = ".reco"
 	thumbFileExt           = ".small"
 	staticFolder           = "static"
-	maxAge                 = 60 * 60 * 24 * 30 // 30 days
+	maxAge                 = 60 * 60 * 24 * 30 // 30 days, for session
 	secret                 = "08-1303"
 	passwordMaxTry         = 5
 )
@@ -41,10 +40,9 @@ var (
 )
 
 var (
-	passwordTry    = 0
-	htmlFiles      = make(map[string]string)
-	sessionManager = session.NewManager(maxAge)
-	db             = new(database.DB)
+	passwordTry = 0
+	htmlFiles   = make(map[string]string)
+	db          = new(database.DB)
 )
 
 type (
@@ -69,7 +67,7 @@ func init() {
 	mustMkdir(cacheThumbDir)
 
 	// open the db here, close the db in main().
-	if err := db.Open(dbPath); err != nil {
+	if err := db.Open(dbPath, maxAge); err != nil {
 		panic(err)
 	}
 }

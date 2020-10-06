@@ -22,32 +22,34 @@ func main() {
 	http.Handle("/public/", http.StripPrefix("/public/", fs))
 
 	cacheFS := http.FileServer(http.Dir(cacheDir))
-	http.Handle("/cache/", http.StripPrefix("/cache/", cacheFS))
+	cacheFS = http.StripPrefix("/cache/", cacheFS)
+	http.Handle("/cache/", checkLoginForFileServer(cacheFS))
 
 	thumbFS := http.FileServer(http.Dir(cacheThumbDir))
-	http.Handle("/thumb/", http.StripPrefix("/thumb/", thumbFS))
+	thumbFS = http.StripPrefix("/thumb/", thumbFS)
+	http.Handle("/thumb/", checkLoginForFileServer(thumbFS))
 
 	http.HandleFunc("/", homePage)
-	http.HandleFunc("/index", indexPage)
-	http.HandleFunc("/api/all-recos", getAllRecos)
+	http.HandleFunc("/index", checkLogin(indexPage))
+	http.HandleFunc("/api/all-recos", checkLogin(getAllRecos))
 
-	http.HandleFunc("/tag", tagPage)
-	http.HandleFunc("/api/tag", getRecosByTag)
+	http.HandleFunc("/tag", checkLogin(tagPage))
+	http.HandleFunc("/api/tag", checkLogin(getRecosByTag))
 
-	http.HandleFunc("/add-file", addFilePage)
-	http.HandleFunc("/api/upload-file", uploadHandler)
-	http.HandleFunc("/api/checksum", checksumHandler)
+	http.HandleFunc("/add-file", checkLogin(addFilePage))
+	http.HandleFunc("/api/upload-file", checkLogin(uploadHandler))
+	http.HandleFunc("/api/checksum", checkLogin(checksumHandler))
 
-	http.HandleFunc("/edit-file", editFilePage)
-	http.HandleFunc("/api/update-file", updateHandler)
+	http.HandleFunc("/edit-file", checkLogin(editFilePage))
+	http.HandleFunc("/api/update-file", checkLogin(updateHandler))
 
-	http.HandleFunc("/api/reco", getRecoHandler)
-	http.HandleFunc("/api/delete-reco", deleteRecoHandler)
-	http.HandleFunc("/api/thumb", createThumbHandler)
+	http.HandleFunc("/api/reco", checkLogin(getRecoHandler))
+	http.HandleFunc("/api/delete-reco", checkLogin(deleteRecoHandler))
+	http.HandleFunc("/api/thumb", checkLogin(createThumbHandler))
 
-	http.HandleFunc("/setup-cloud", setupCloudPage)
-	http.HandleFunc("/api/setup-cloud", setupCloudHandler)
-	http.HandleFunc("/api/check-cloud-settings", checkCloudSettings)
+	http.HandleFunc("/setup-cloud", checkLogin(setupCloudPage))
+	http.HandleFunc("/api/setup-cloud", checkLogin(setupCloudHandler))
+	http.HandleFunc("/api/check-cloud-settings", checkLogin(checkCloudSettings))
 
 	http.HandleFunc("/create-account", createAccountPage)
 	http.HandleFunc("/api/create-account", createAccountHandler)
@@ -55,6 +57,7 @@ func main() {
 
 	http.HandleFunc("/login", loginPage)
 	http.HandleFunc("/api/login", loginHandler)
+	http.HandleFunc("/api/check-login", checkLoginHandler)
 	http.HandleFunc("/api/check-cos", checkCOS)
 
 	http.HandleFunc("/danger/delete-first-reco", deleteFirstReco)
@@ -227,7 +230,7 @@ func updateHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if oldReco.EqualContent(reco) {
-		jsonMessage(w, "无任何变化", 401)
+		jsonMessage(w, "无任何变化", 400)
 		return
 	}
 
@@ -372,6 +375,13 @@ func checkCOS(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func checkLoginHandler(w http.ResponseWriter, r *http.Request) {
+	if isLoggedIn(r) {
+		jsonMessage(w, "true", 200)
+	} else {
+		jsonMessage(w, "false", 200)
+	}
+}
 func isAccountExist(w http.ResponseWriter, r *http.Request) {
 	if db.IsFirstRecoExist() {
 		jsonMessage(w, "true", 200)
@@ -391,6 +401,28 @@ func createAccountHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func loginHandler(w http.ResponseWriter, r *http.Request) {
+	if isLoggedIn(r) {
+		jsonMessage(w, "Already logged in.", 400)
+		return
+	}
+
+	// db.Login 的作用是验证密码。
 	passphrase := r.FormValue("passphrase")
-	checkErr(w, db.LoginLoadSettings(passphrase, ibmSettingsPath), 500)
+	if err := db.Login(passphrase); err != nil {
+		passwordTry++
+		if checkPasswordTry(w) {
+			return
+		}
+		jsonResponse(w, err, 400)
+		return
+	}
+
+	// 如果 COS 未设置，则尝试设置，但此时忽略错误。
+	if db.COS == nil {
+		_ = db.LoadSettings(ibmSettingsPath)
+	}
+
+	// 成功登入
+	passwordTry = 0
+	db.Sess.Add(w, util.NewID())
 }

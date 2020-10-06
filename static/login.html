@@ -40,6 +40,12 @@
           </div>
         </div>
 
+        <div id="already-logged-in" style="display: none;">
+          <div class="alert alert-primary" role="alert">
+              You've logged in.
+          </div>
+        </div>
+
         <form style="margin-top: 50px;" autocomplete="off">
 
             <div class="form-group">
@@ -98,6 +104,16 @@ function checkAccountExist() {
     if (this.status == 200 && this.response.message == "false") {
         $('#account-not-exists').show();
         $('form').hide();
+    }
+  });
+}
+
+checkLogin();
+function checkLogin() {
+  ajaxGet('/api/check-login', null, function() {
+    if (this.status == 200 && this.response.message == "true") {
+      $('#already-logged-in').show();
+      $('form').hide();
     }
   });
 }

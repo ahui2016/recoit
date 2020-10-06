@@ -10,6 +10,7 @@ import (
 	"github.com/ahui2016/recoit/aesgcm"
 	"github.com/ahui2016/recoit/ibm"
 	"github.com/ahui2016/recoit/model"
+	"github.com/ahui2016/recoit/session"
 	"github.com/ahui2016/recoit/util"
 	"github.com/asdine/storm/v3"
 )
@@ -27,14 +28,30 @@ type DB struct {
 	DB   *storm.DB
 	GCM  *aesgcm.AEAD
 	COS  *ibm.COS
+	Sess *session.Manager
+}
+
+// Reset .
+func (db *DB) Reset() {
+	db.GCM = nil
+	db.COS = nil
+}
+
+// IsReady .
+func (db *DB) IsReady() bool {
+	if db.GCM != nil && db.COS != nil {
+		return true
+	}
+	return false
 }
 
 // Open .
-func (db *DB) Open(dbPath string) (err error) {
+func (db *DB) Open(dbPath string, maxAge int) (err error) {
 	if db.DB, err = storm.Open(dbPath); err != nil {
 		return err
 	}
 	db.path = dbPath
+	db.Sess = session.NewManager(maxAge)
 	log.Print(dbPath)
 	return nil
 }
@@ -88,13 +105,15 @@ func (db *DB) createIndexes() error {
 	return nil
 }
 
-// LoginLoadSettings .
+// LoginLoadSettings 使用 passphrase 解锁数据库，并尝试导入 COS 的设置。
+// 但此时忽略 LoadSettings 的错误。
 func (db *DB) LoginLoadSettings(passphrase, settingsPath string) error {
 	err := db.Login(passphrase)
 	if err != nil {
 		return err
 	}
-	return db.loadSettings(settingsPath)
+	_ = db.LoadSettings(settingsPath)
+	return nil
 }
 
 // Login .
@@ -174,11 +193,11 @@ func (db *DB) encryptUploadFile(filePath string) error {
 
 // 检查云储存的 settings 是否已经保存在本地，如果是，则直接从本地导入 settings.
 // 如果本地没有 settings, 则不进行任何操作。
-func (db *DB) loadSettings(settingsPath string) error {
+func (db *DB) LoadSettings(settingsPath string) error {
 	if util.PathIsNotExist(settingsPath) {
 		return nil
 	}
-	if db.GCM == nil {
+	if !db.IsReady() {
 		return errors.New("require login")
 	}
 	encryptedSettings, err := ioutil.ReadFile(settingsPath)
