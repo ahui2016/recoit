@@ -219,7 +219,9 @@ func (db *DB) DeleteReco(id string) error {
 	return db.DB.UpdateField(&reco, "DeletedAt", util.TimeNow())
 }
 
-func (db *DB) InsertReco(reco *Reco) error {
+// InsertReco 插入一个 reco 到数据库中，同时添加 tags 到数据库中。
+// 由于还需要上传文件到 COS, 如果上传失败要回滚数据库，因此在这个事务内上传。
+func (db *DB) InsertReco(reco *Reco, objName string, objBody []byte) error {
 	tx, err := db.DB.Begin(true)
 	if err != nil {
 		return err
@@ -232,7 +234,26 @@ func (db *DB) InsertReco(reco *Reco) error {
 	if err := addTags(tx, reco.Tags, reco.ID); err != nil {
 		return err
 	}
+	if err := db.encryptUpload(objName, objBody); err != nil {
+		return err
+	}
 	return tx.Commit()
+}
+
+// encryptUpload 上传数据到 COS.
+func (db *DB) encryptUpload(objName string, content []byte) error {
+	ciphertext := db.GCM.Encrypt(content)
+	body := bytes.NewReader(ciphertext)
+	if _, err := db.COS.PutObject(objName, body); err != nil {
+		return err
+	}
+	return nil
+}
+
+// DeleteObject 删除 COS 里的数据。
+func (db *DB) deleteObject(objName string) error {
+	_, err := db.COS.DeleteObject(objName)
+	return err
 }
 
 func (db *DB) UpdateReco(oldReco, reco *Reco) error {

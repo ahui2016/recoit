@@ -24,6 +24,29 @@ function ajaxPost(form, url, btn, onloadHandler) {
   xhr.send(form);
 }
 
+function ajaxPostWithSpinner(form, url, button_name, onloadHandler) {
+  if (button_name) {
+    $(`#${button_name}-btn`).hide();
+    $(`#${button_name}-spinner`).show();
+  }
+
+  let xhr = new XMLHttpRequest();
+  xhr.responseType = 'json';
+
+  xhr.open('POST', url);
+  xhr.onerror = function () {
+    window.alert('An error occurred during the transaction');
+  };
+  xhr.addEventListener('loadend', function() {
+    if (button_name) {
+      $(`#${button_name}-btn`).show();
+      $(`#${button_name}-spinner`).hide();
+    }
+  });
+  xhr.onload = onloadHandler;
+  xhr.send(form);
+}
+
 function ajaxGet(url, btn, onloadHandler) {
   if (btn) {
     btn.prop('disabled', true);

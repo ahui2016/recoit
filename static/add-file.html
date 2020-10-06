@@ -39,12 +39,10 @@
           </div>
 
           <!--成功提示-->
-          <template id="alert-success-tmpl">
-            <div class="alert alert-success alert-dismissible fade show" role="alert">
-                OK. File Uploaded.<br/>
-                <a>Click here to edit it</a>.                
-            </div>
-          </template>
+          <div id="success-message" class="alert alert-success" role="alert" style="display: none;">
+              OK. File Uploaded.<br/>
+              <a>Click here to edit it</a>.                
+          </div>
 
           <!--错误提示-->
           <template id="alert-danger-tmpl">
@@ -87,6 +85,10 @@
 
             <input type="submit" disabled hidden />
             <button id="upload-btn" type="button" class="btn btn-primary">Upload</button>
+            <button id="upload-spinner" class="btn btn-primary" style="display: none;" type="button" disabled>
+              Upload
+              <span class="spinner-border spinner-border-sm" role="status"></span>
+            </button>  
           </div>
         </form>
     </div>
@@ -164,7 +166,7 @@ function uploadFile(btn) {
   form.append('file-size', file.size);
   form.append('file-tags', JSON.stringify(newTags));
 
-  ajaxPost(form, '/api/upload-file', btn, function() {
+  ajaxPostWithSpinner(form, '/api/upload-file', 'upload', function() {
     if (this.status == 200) {
       let editURL = `/edit-file?id=${this.response.message}`;
       showSuccessAlert(editURL);
@@ -177,9 +179,8 @@ function uploadFile(btn) {
 }
 
 function showSuccessAlert(msg) {
-  let errAlert = $('#alert-success-tmpl').contents().clone();
-  errAlert.find('.AlertMessage').attr('href', msg);
-  errAlert.insertAfter('#alert-success-tmpl');
+  $('#success-message').show();
+  $('#success-message').find('a').attr('href', msg);
 }
     </script>
   </body>

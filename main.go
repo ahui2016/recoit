@@ -142,10 +142,8 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO: send to IBM COS
-
-	// 在 insertReco 里会添加 Reco.ID 到 Tag 数据表。
-	if checkErr(w, db.InsertReco(reco), 500) {
+	// 在 insertReco 里会添加 Reco.ID 到 Tag 数据表，并且会上传文件到 COS.
+	if checkErr(w, db.InsertReco(reco, addRecoExt(reco.ID), fileContents), 500) {
 		return
 	}
 

@@ -23,7 +23,7 @@ const (
 	cacheFolderName        = "RecoitCacheDir"   // inside "recoit_data_folder"
 	cacheThumbFolderName   = "RecoitCacheThumb" // inside "recoit_data_folder"
 	tempFolderName         = "RecoitTempDir"    // inside "recoit_data_folder"
-	tempFileExt            = ".reco"
+	recoFileExt            = ".reco"
 	thumbFileExt           = ".small"
 	staticFolder           = "static"
 	maxAge                 = 60 * 60 * 24 * 30 // 30 days
@@ -138,7 +138,7 @@ func jsonResponse(w http.ResponseWriter, obj interface{}, code int) {
 }
 
 func cacheFilePath(id string) string {
-	return filepath.Join(cacheDir, id+tempFileExt)
+	return filepath.Join(cacheDir, addRecoExt(id))
 }
 
 func cacheThumbPath(id string) string {
@@ -158,4 +158,9 @@ func writeCacheFile(file *Reco, fileContents []byte) error {
 		}
 	}
 	return nil
+}
+
+// addRecoExt adds '.reco' to name.
+func addRecoExt(name string) string {
+	return name + recoFileExt
 }
