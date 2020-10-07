@@ -105,17 +105,6 @@ func (db *DB) createIndexes() error {
 	return nil
 }
 
-// LoginLoadSettings 使用 passphrase 解锁数据库，并尝试导入 COS 的设置。
-// 但此时忽略 LoadSettings 的错误。
-func (db *DB) LoginLoadSettings(passphrase, settingsPath string) error {
-	err := db.Login(passphrase)
-	if err != nil {
-		return err
-	}
-	_ = db.LoadSettings(settingsPath)
-	return nil
-}
-
 // Login .
 func (db *DB) Login(passphrase string) error {
 	if passphrase == "" {

@@ -29,13 +29,10 @@ func checkLoginForFileServer(h http.Handler) http.HandlerFunc {
 
 func checkLogin(fn http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if checkPasswordTry(w) {
-			return
-		}
 		if isLoggedOut(r) {
 			// 凡是以 "/api/" 开头的请求都返回 json 消息。
 			if strings.HasPrefix(r.URL.Path, "/api/") {
-				jsonMessage(w, "Require Login", http.StatusUnauthorized)
+				jsonRequireLogin(w)
 				return
 			}
 			// 不是以 "/api/" 开头的都是页面。

@@ -122,6 +122,10 @@ func jsonMsg404(w http.ResponseWriter) {
 	jsonMessage(w, "Not Found", 404)
 }
 
+func jsonRequireLogin(w http.ResponseWriter) {
+	jsonMessage(w, "Require Login", http.StatusUnauthorized)
+}
+
 func jsonMessage(w http.ResponseWriter, message string, code int) {
 	msg := map[string]string{"message": message}
 	jsonResponse(w, msg, code)

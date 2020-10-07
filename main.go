@@ -47,9 +47,9 @@ func main() {
 	http.HandleFunc("/api/delete-reco", checkLogin(deleteRecoHandler))
 	http.HandleFunc("/api/thumb", checkLogin(createThumbHandler))
 
-	http.HandleFunc("/setup-cloud", checkLogin(setupCloudPage))
-	http.HandleFunc("/api/setup-cloud", checkLogin(setupCloudHandler))
-	http.HandleFunc("/api/check-cloud-settings", checkLogin(checkCloudSettings))
+	http.HandleFunc("/setup-cloud", setupCloudPage)
+	http.HandleFunc("/api/setup-cloud", setupCloudHandler)
+	http.HandleFunc("/api/check-cloud-settings", checkCloudSettings)
 
 	http.HandleFunc("/create-account", createAccountPage)
 	http.HandleFunc("/api/create-account", createAccountHandler)
@@ -57,6 +57,7 @@ func main() {
 
 	http.HandleFunc("/login", loginPage)
 	http.HandleFunc("/api/login", loginHandler)
+	http.HandleFunc("/api/logout", logoutHandler)
 	http.HandleFunc("/api/check-login", checkLoginHandler)
 	http.HandleFunc("/api/check-cos", checkCOS)
 
@@ -96,6 +97,10 @@ func tagPage(w http.ResponseWriter, r *http.Request) {
 }
 
 func setupCloudPage(w http.ResponseWriter, r *http.Request) {
+	if db.GCM == nil {
+		fmt.Fprint(w, htmlFiles["login"])
+		return
+	}
 	fmt.Fprint(w, htmlFiles["setup-cloud"])
 }
 
@@ -349,6 +354,10 @@ func getRecosByTag(w http.ResponseWriter, r *http.Request) {
 }
 
 func setupCloudHandler(w http.ResponseWriter, r *http.Request) {
+	if db.GCM == nil {
+		jsonRequireLogin(w)
+		return
+	}
 	settings := ibm.Settings{
 		ApiKey:            strings.TrimSpace(r.FormValue("apikey")),
 		ServiceInstanceID: strings.TrimSpace(r.FormValue("serviceInstanceID")),
@@ -417,14 +426,20 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 如果 COS 未设置，则尝试设置，但此时忽略错误。
+	// 当且只当 COS 未设置时才尝试设置。
 	if db.COS == nil {
-		err := db.LoadSettings(ibmSettingsPath)
-		jsonMessage(w, err.Error(), 400)
-		return
+		if checkErr(w, db.LoadSettings(ibmSettingsPath), 500) {
+			return
+		}
 	}
 
 	// 成功登入
 	passwordTry = 0
 	db.Sess.Add(w, util.NewID())
+}
+
+func logoutHandler(w http.ResponseWriter, r *http.Request) {
+	db.Reset()
+	db.Sess.DeleteSID(w, r)
+	http.Redirect(w, r, "/login", http.StatusTemporaryRedirect)
 }

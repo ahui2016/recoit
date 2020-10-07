@@ -50,7 +50,7 @@ func (manager *Manager) Check(r *http.Request) bool {
 	return true
 }
 
-// DeleteSID 同时删除 manager.store 中的 sid 以及 cookie 中的 sid.
+// DeleteSID 同时删除 manager.store 中的 sid 并使 session 过期。
 func (manager *Manager) DeleteSID(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie(manager.name)
 	if err == nil {
