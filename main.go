@@ -413,13 +413,15 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 		if checkPasswordTry(w) {
 			return
 		}
-		jsonResponse(w, err, 400)
+		jsonMessage(w, err.Error(), 400)
 		return
 	}
 
 	// 如果 COS 未设置，则尝试设置，但此时忽略错误。
 	if db.COS == nil {
-		_ = db.LoadSettings(ibmSettingsPath)
+		err := db.LoadSettings(ibmSettingsPath)
+		jsonMessage(w, err.Error(), 400)
+		return
 	}
 
 	// 成功登入

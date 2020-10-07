@@ -191,13 +191,13 @@ func (db *DB) encryptUploadFile(filePath string) error {
 	return nil
 }
 
-// 检查云储存的 settings 是否已经保存在本地，如果是，则直接从本地导入 settings.
-// 如果本地没有 settings, 则不进行任何操作。
+// LoadSettings 检查云储存的 settings 是否已经保存在本地，
+// 如果是，则直接从本地导入 settings. 如果本地没有 settings, 则不进行任何操作。
 func (db *DB) LoadSettings(settingsPath string) error {
 	if util.PathIsNotExist(settingsPath) {
 		return nil
 	}
-	if !db.IsReady() {
+	if db.GCM == nil {
 		return errors.New("require login")
 	}
 	encryptedSettings, err := ioutil.ReadFile(settingsPath)
