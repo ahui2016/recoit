@@ -184,7 +184,7 @@ function submit(event) {
   // form.append('bucket-location', $('#bucket-location').val());
   form.append('bucket-name', $('#bucket-name').val());
 
-  ajaxPostWithSpinner(form, '/api/setup-cloud', 'submit', function() {
+  ajaxPostWithSpinner(form, '/api/setup-ibm-cos', 'submit', function() {
     if (this.status == 200) {
       insertSuccessAlert('OK. IBM COS is ready to use.');
       $('ul').hide();

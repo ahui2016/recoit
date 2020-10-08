@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/ahui2016/recoit/cloud"
 	"github.com/ahui2016/recoit/ibm"
 	"github.com/ahui2016/recoit/model"
 	"github.com/ahui2016/recoit/util"
@@ -47,8 +48,8 @@ func main() {
 	http.HandleFunc("/api/delete-reco", checkLogin(deleteRecoHandler))
 	http.HandleFunc("/api/thumb", checkLogin(createThumbHandler))
 
-	http.HandleFunc("/setup-cloud", setupCloudPage)
-	http.HandleFunc("/api/setup-cloud", setupCloudHandler)
+	http.HandleFunc("/setup-cloud/ibm", setupIbmCosPage)
+	http.HandleFunc("/api/setup-ibm-cos", setupIbmCosHandler)
 	http.HandleFunc("/api/check-cloud-settings", checkCloudSettings)
 
 	http.HandleFunc("/create-account", createAccountPage)
@@ -96,12 +97,12 @@ func tagPage(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, htmlFiles["tag"])
 }
 
-func setupCloudPage(w http.ResponseWriter, r *http.Request) {
+func setupIbmCosPage(w http.ResponseWriter, r *http.Request) {
 	if db.GCM == nil {
 		fmt.Fprint(w, htmlFiles["login"])
 		return
 	}
-	fmt.Fprint(w, htmlFiles["setup-cloud"])
+	fmt.Fprint(w, htmlFiles["setup-ibm-cos"])
 }
 
 func createAccountPage(w http.ResponseWriter, r *http.Request) {
@@ -353,23 +354,24 @@ func getRecosByTag(w http.ResponseWriter, r *http.Request) {
 	jsonResponse(w, recos, 200)
 }
 
-func setupCloudHandler(w http.ResponseWriter, r *http.Request) {
+func setupIbmCosHandler(w http.ResponseWriter, r *http.Request) {
 	if db.GCM == nil {
 		jsonRequireLogin(w)
 		return
 	}
 	settings := ibm.Settings{
+		Provider:          cloud.IBM,
 		ApiKey:            strings.TrimSpace(r.FormValue("apikey")),
 		ServiceInstanceID: strings.TrimSpace(r.FormValue("serviceInstanceID")),
 		ServiceEndpoint:   strings.TrimSpace(r.FormValue("endpoint")),
 		BucketName:        strings.TrimSpace(r.FormValue("bucket-name")),
 		// BucketLocation:    strings.TrimSpace(r.FormValue("bucket-location")),
 	}
-	checkErr(w, db.SetupCloud(&settings, ibmSettingsPath), 500)
+	checkErr(w, db.SetupIbmCos(&settings, cosSettingsPath), 500)
 }
 
 func checkCloudSettings(w http.ResponseWriter, r *http.Request) {
-	if util.PathIsExist(ibmSettingsPath) {
+	if util.PathIsExist(cosSettingsPath) {
 		jsonMsgOK(w)
 	} else {
 		jsonMsg404(w)
@@ -428,7 +430,7 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 
 	// 当且只当 COS 未设置时才尝试设置。
 	if db.COS == nil {
-		if checkErr(w, db.LoadSettings(ibmSettingsPath), 500) {
+		if checkErr(w, db.LoadSettings(cosSettingsPath), 500) {
 			return
 		}
 	}

@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 
 	"github.com/ahui2016/recoit/aesgcm"
+	"github.com/ahui2016/recoit/cloud"
 	"github.com/ahui2016/recoit/ibm"
 	"github.com/ahui2016/recoit/model"
 	"github.com/ahui2016/recoit/session"
@@ -24,11 +25,31 @@ type (
 
 // DB 将数据库、加密、云储存三大功能汇于一身。
 type DB struct {
-	path string
-	DB   *storm.DB
-	GCM  *aesgcm.AEAD
-	COS  *ibm.COS
-	Sess *session.Manager
+	path         string
+	settingsPath string
+	DB           *storm.DB
+	GCM          *aesgcm.AEAD
+	COS          cloud.ObjectStorage
+	Sess         *session.Manager
+}
+
+// NewDB 设置数据库文件的 path. 下一步需要执行 db.Open.
+func NewDB(dbPath, settingsPath string) *DB {
+	return &DB{
+		path:         dbPath,
+		settingsPath: settingsPath,
+	}
+}
+
+// Open 执行 storm.Open 等操作。必须先执行 NewDB 后才能执行 db.Open,
+// 并且要记得执行 db.Close.
+func (db *DB) Open(maxAge int) (err error) {
+	if db.DB, err = storm.Open(db.path); err != nil {
+		return err
+	}
+	db.Sess = session.NewManager(maxAge)
+	log.Print(db.path)
+	return nil
 }
 
 // Reset .
@@ -43,17 +64,6 @@ func (db *DB) IsReady() bool {
 		return true
 	}
 	return false
-}
-
-// Open .
-func (db *DB) Open(dbPath string, maxAge int) (err error) {
-	if db.DB, err = storm.Open(dbPath); err != nil {
-		return err
-	}
-	db.path = dbPath
-	db.Sess = session.NewManager(maxAge)
-	log.Print(dbPath)
-	return nil
 }
 
 // Close .
@@ -137,12 +147,17 @@ func decryptFirstReco(passphrase, key64 string) (*aesgcm.AEAD, error) {
 	return gcm, nil
 }
 
-// SetupCloud .
-func (db *DB) SetupCloud(settings *ibm.Settings, settingsPath string) error {
+// SetupIbmCos .
+func (db *DB) SetupIbmCos(settings *ibm.Settings) error {
+
 	if db.GCM == nil {
 		return errors.New("require login")
 	}
-	cos := ibm.NewCOS(settings)
+	cos := settings.NewCOS()
+	db.setupCloud(cos, settings)
+}
+
+func (db *DB) setupCloud(cos cloud.ObjectStorage, settings cloud.Settings) error {
 
 	// 检查 settings 是否正确。
 	if err := cos.TryUploadDelete(); err != nil {
@@ -152,7 +167,7 @@ func (db *DB) SetupCloud(settings *ibm.Settings, settingsPath string) error {
 	// 加密并写入硬盘。
 	settingsJSON := settings.Encode()
 	encrypted := db.GCM.Encrypt(settingsJSON)
-	if err := ioutil.WriteFile(settingsPath, encrypted, 0600); err != nil {
+	if err := ioutil.WriteFile(db.settingsPath, encrypted, 0600); err != nil {
 		return err
 	}
 
@@ -174,7 +189,7 @@ func (db *DB) encryptUploadFile(filePath string) error {
 	name := filepath.Base(filePath)
 	ciphertext := db.GCM.Encrypt(content)
 	body := bytes.NewReader(ciphertext)
-	if _, err := db.COS.PutObject(name, body); err != nil {
+	if err := db.COS.PutObject(name, body); err != nil {
 		return err
 	}
 	return nil
@@ -182,14 +197,14 @@ func (db *DB) encryptUploadFile(filePath string) error {
 
 // LoadSettings 检查云储存的 settings 是否已经保存在本地，
 // 如果是，则直接从本地导入 settings. 如果本地没有 settings, 则不进行任何操作。
-func (db *DB) LoadSettings(settingsPath string) error {
-	if util.PathIsNotExist(settingsPath) {
+func (db *DB) LoadSettings() error {
+	if util.PathIsNotExist(db.settingsPath) {
 		return nil
 	}
 	if db.GCM == nil {
 		return errors.New("require login")
 	}
-	encryptedSettings, err := ioutil.ReadFile(settingsPath)
+	encryptedSettings, err := ioutil.ReadFile(db.settingsPath)
 	if err != nil {
 		return err
 	}
@@ -197,9 +212,18 @@ func (db *DB) LoadSettings(settingsPath string) error {
 	if err != nil {
 		return err
 	}
-	settings := ibm.NewSettingsFromJSON(settingsJSON)
-	db.COS = ibm.NewCOS(settings)
+	db.COS = newCOS(settingsJSON)
 	return nil
+}
+
+func newCOS(settingsJSON []byte) cloud.ObjectStorage {
+	switch provider := cloud.GetProviderFromJSON(settingsJSON); provider {
+	case cloud.IBM:
+		settings := ibm.NewSettingsFromJSON(settingsJSON)
+		return settings.NewCOS()
+	default:
+		panic("provider not found: " + provider)
+	}
 }
 
 // IsFirstRecoExist .
@@ -262,7 +286,7 @@ func (db *DB) InsertReco(reco *Reco, objName string, objBody []byte) error {
 func (db *DB) encryptUpload(objName string, content []byte) error {
 	ciphertext := db.GCM.Encrypt(content)
 	body := bytes.NewReader(ciphertext)
-	if _, err := db.COS.PutObject(objName, body); err != nil {
+	if err := db.COS.PutObject(objName, body); err != nil {
 		return err
 	}
 	return nil
@@ -289,8 +313,7 @@ func (db *DB) DownloadDecrypt(objName, filePath string) error {
 
 // deleteObject 删除 COS 里的数据。
 func (db *DB) deleteObject(objName string) error {
-	_, err := db.COS.DeleteObject(objName)
-	return err
+	return db.COS.DeleteObject(objName)
 }
 
 // UpdateReco .

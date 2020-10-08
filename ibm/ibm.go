@@ -30,18 +30,6 @@ type COS struct {
 	client            *s3.S3
 }
 
-// NewCOS 生成一个 cos, 在 package main 里作为一个全局变量来使用。
-func NewCOS(settings *Settings) *COS {
-	return &COS{
-		apiKey:            settings.ApiKey,
-		serviceInstanceID: settings.ServiceInstanceID,
-		authEndpoint:      authEndpoint, // const
-		serviceEndpoint:   settings.ServiceEndpoint,
-		bucketLocation:    settings.BucketLocation,
-		bucketName:        settings.BucketName,
-	}
-}
-
 func (cos *COS) makeConfig() {
 	log.Println("making IBM COS config...")
 	cos.conf = aws.NewConfig().
@@ -95,9 +83,10 @@ func (cos *COS) upload(objName string, objBody io.Reader) (*s3manager.UploadOutp
 */
 
 // PutObject 上传数据到云端。
-func (cos *COS) PutObject(objName string, objBody io.ReadSeeker) (*s3.PutObjectOutput, error) {
+func (cos *COS) PutObject(objName string, objBody io.ReadSeeker) error {
 	cos.makeSureConfig()
-	return cos.putObject(objName, objBody)
+	_, err := cos.putObject(objName, objBody)
+	return err
 }
 
 // PutFile 上传本地文件到云端。
@@ -145,9 +134,10 @@ func (cos *COS) GetObjectBody(name string) (io.ReadCloser, error) {
 }
 
 // DeleteObject 删除云端的一个对象。
-func (cos *COS) DeleteObject(name string) (*s3.DeleteObjectOutput, error) {
+func (cos *COS) DeleteObject(name string) error {
 	cos.makeSureConfig()
-	return cos.deleteObject(name)
+	_, err := cos.deleteObject(name)
+	return err
 }
 
 func (cos *COS) deleteObject(name string) (*s3.DeleteObjectOutput, error) {
