@@ -310,7 +310,7 @@ func (db *DB) deleteObject(objName string) error {
 }
 
 // UpdateReco .
-func (db *DB) UpdateReco(oldReco, reco *Reco) error {
+func (db *DB) UpdateReco(oldReco, reco *Reco, objName string, objBody []byte) error {
 	tx, err := db.DB.Begin(true)
 	if err != nil {
 		return err
@@ -336,6 +336,13 @@ func (db *DB) UpdateReco(oldReco, reco *Reco) error {
 	// 添加标签（将 id 添加到 tag.RecoIDs 里）
 	if err := addTags(tx, toAdd, reco.ID); err != nil {
 		return err
+	}
+
+	// 如果文件有更新则需要更新 COS 里的文件
+	if objBody != nil && reco.Checksum != oldReco.Checksum {
+		if err := db.encryptUpload(objName, objBody); err != nil {
+			return err
+		}
 	}
 
 	tx.Commit()

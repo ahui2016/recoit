@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -57,8 +58,8 @@ func main() {
 	http.HandleFunc("/api/is-account-exist", isAccountExist)
 
 	http.HandleFunc("/login", loginPage)
+	http.HandleFunc("/logout", logoutPage)
 	http.HandleFunc("/api/login", loginHandler)
-	http.HandleFunc("/api/logout", logoutHandler)
 	http.HandleFunc("/api/check-login", checkLoginHandler)
 	http.HandleFunc("/api/check-cos", checkCOS)
 
@@ -114,24 +115,10 @@ func loginPage(w http.ResponseWriter, r *http.Request) {
 }
 
 func uploadHandler(w http.ResponseWriter, r *http.Request) {
-	var maxBytes int64 = 1024 * 1024 * 3 // 3 MB
-	r.Body = http.MaxBytesReader(w, r.Body, maxBytes)
 
-	file, fileHeader, err := r.FormFile("file")
-	if checkErr(w, err, 500) {
-		return
-	}
-	defer file.Close()
-
-	// 将文件内容全部读入内存
-	fileContents, err := ioutil.ReadAll(file)
-	if checkErr(w, err, 500) {
-		return
-	}
-
-	// 根据文件内容生成 checksum 并检查其是否正确
-	if util.Sha256Hex(fileContents) != r.FormValue("checksum") {
-		jsonMessage(w, "Error Checksum Unmatching", 400)
+	// 在 getFileContents 里更改了 r.Body
+	fileContents, err := getFileContents(w, r)
+	if checkErr(w, err, 400) {
 		return
 	}
 
@@ -143,7 +130,7 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	reco.Checksum = r.FormValue("checksum")
-	reco.FileSize = fileHeader.Size
+	reco.FileSize = int64(len(fileContents))
 
 	// 添加标签到 Reco, 后续还要添加 Reco.ID 到 Tag 数据表。
 	fileTags := []byte(r.FormValue("file-tags"))
@@ -166,75 +153,58 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 	jsonMessage(w, reco.ID, 200)
 }
 
-func updateHandler(w http.ResponseWriter, r *http.Request) {
+func getFileContents(w http.ResponseWriter, r *http.Request) ([]byte, error) {
+
 	var maxBytes int64 = 1024 * 1024 * 3 // 3 MB
 	r.Body = http.MaxBytesReader(w, r.Body, maxBytes)
 
-	// 获取数据库中的 reco
-	id := r.FormValue("id")
-	reco, err := db.GetRecoByID(id)
-	if checkErr(w, err, 500) {
-		return
+	file, _, err := r.FormFile("file")
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	// 将文件内容全部读入内存
+	contents, err := ioutil.ReadAll(file)
+	if err != nil {
+		return nil, err
 	}
 
-	// 为节省流量、减少出错，禁止上传相同文件。
-	checksum := r.FormValue("checksum")
-	if checksum != "" && reco.Checksum == checksum {
-		jsonMessage(w, "Can not upload the same file", 400)
-		return
+	// 根据文件内容生成 checksum 并检查其是否正确
+	if util.Sha256Hex(contents) != r.FormValue("checksum") {
+		return nil, errors.New("Error Checksum Unmatching")
 	}
+	return contents, nil
+}
 
-	// 本来还应该检查 checksum 的唯一性，但替换文件是低频操作，因此可以偷懒。
+func updateHandler(w http.ResponseWriter, r *http.Request) {
 
-	file, fileHeader, err := r.FormFile("file")
+	// 在 getFileContents 里更改了 r.Body
+	fileContents, err := getFileContents(w, r)
 	if err != nil && err != http.ErrMissingFile {
 		jsonResponse(w, err, 500)
 		return
 	}
-	if file != nil {
-		defer file.Close()
-	}
 
-	var fileContents []byte
-	// 当发生错误 http.ErrMissingFile 时，file 等于 null。
-	if file != nil {
-		// 将文件内容全部读入内存
-		fileContents, err = ioutil.ReadAll(file)
-		if checkErr(w, err, 500) {
-			return
-		}
-		// 根据文件内容生成 checksum 并检查其是否正确
-		if util.Sha256Hex(fileContents) != checksum {
-			jsonMessage(w, "Error Checksum Unmatching", 400)
-			return
-		}
-		reco.Checksum = checksum
-		reco.FileSize = fileHeader.Size
-	}
-
-	if checkErr(w, reco.SetFileNameType(r.FormValue("file-name")), 400) {
-		return
-	}
-	reco.Message = strings.TrimSpace(r.FormValue("description"))
-
-	// TODO: to update reco.Collections
-
-	fileLinks := []byte(r.FormValue("file-links"))
-	if checkErr(w, json.Unmarshal(fileLinks, &reco.Links), 500) {
+	// 获取数据库中的 reco
+	id := r.FormValue("id")
+	reco, err := db.GetRecoByID(id)
+	if checkErr(w, err, 400) {
 		return
 	}
 
-	fileTags := []byte(r.FormValue("file-tags"))
-	if checkErr(w, json.Unmarshal(fileTags, &reco.Tags), 500) {
+	// 为节省流量、减少出错，禁止上传相同文件。(在前端防止)
+	// 本来还应该检查 checksum 的唯一性，但替换文件是低频操作，因此可以偷懒。
+
+	// 更新 reco 的内容
+	if checkErr(w, updateReco(r, fileContents, reco), 500) {
 		return
 	}
-
 	// 至此，reco 已被更新，重新从数据库获取 reco 用来对比有无更新。
 	oldReco, err := db.GetRecoByID(id)
 	if checkErr(w, err, 500) {
 		return
 	}
-
 	if oldReco.EqualContent(reco) {
 		jsonMessage(w, "无任何变化", 400)
 		return
@@ -245,16 +215,41 @@ func updateHandler(w http.ResponseWriter, r *http.Request) {
 	reco.AccessedAt = util.TimeNow()
 	reco.UpdatedAt = reco.AccessedAt
 
-	// TODO: update to IBM COS
-
-	db.UpdateReco(oldReco, reco)
+	if checkErr(w, db.UpdateReco(oldReco, reco, addRecoExt(id), fileContents), 500) {
+		return
+	}
 
 	// 更新缓存文件
-	if reco.FileType != model.NotFile && reco.Checksum != oldReco.Checksum {
+	if fileContents != nil && reco.Checksum != oldReco.Checksum {
 		if checkErr(w, writeCacheFile(reco, fileContents), 500) {
 			return
 		}
 	}
+}
+
+// updateReco updates checksum, filesize, filename, message, collections,
+// links, tags of a reco
+func updateReco(r *http.Request, fileContents []byte, reco *Reco) error {
+	if fileContents != nil {
+		reco.Checksum = util.Sha256Hex(fileContents)
+		reco.FileSize = int64(len(fileContents))
+	}
+	if err := reco.SetFileNameType(r.FormValue("file-name")); err != nil {
+		return err
+	}
+	reco.Message = strings.TrimSpace(r.FormValue("description"))
+
+	// TODO: to update reco.Collections
+
+	fileLinks := []byte(r.FormValue("file-links"))
+	if err := json.Unmarshal(fileLinks, &reco.Links); err != nil {
+		return err
+	}
+	fileTags := []byte(r.FormValue("file-tags"))
+	if err := json.Unmarshal(fileTags, &reco.Tags); err != nil {
+		return err
+	}
+	return nil
 }
 
 func checksumHandler(w http.ResponseWriter, r *http.Request) {
@@ -282,7 +277,6 @@ func getRecoHandler(w http.ResponseWriter, r *http.Request) {
 	if checkErr(w, db.AccessCountUp(id, reco.AccessCount), 500) {
 		return
 	}
-	reco.Checksum = ""
 	jsonResponse(w, reco, 200)
 }
 
@@ -440,7 +434,7 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 	db.Sess.Add(w, util.NewID())
 }
 
-func logoutHandler(w http.ResponseWriter, r *http.Request) {
+func logoutPage(w http.ResponseWriter, r *http.Request) {
 	db.Reset()
 	db.Sess.DeleteSID(w, r)
 	http.Redirect(w, r, "/login", http.StatusTemporaryRedirect)

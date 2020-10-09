@@ -205,7 +205,7 @@ initData();
 
 let recoTags = [], recoLinks = [];
 let oldFile = {};
-let fileSha256 = '';
+let currentChecksum = '';
 
 // 自动在标签前加井号
 $('#tags-input').blur(() => {
@@ -222,7 +222,8 @@ function initData() {
       let reco = this.response;
       oldFile = {
         size: fileSizeToString(reco.FileSize),
-        name: reco.FileName
+        name: reco.FileName,
+        checksum: reco.Checksum,
       };
 
       if (reco.DeletedAt != "") {
@@ -396,7 +397,7 @@ $('#file-input').change(event => {
     $('#file-name-input').val(oldFile.name);
   } else {
     tryToDrawThumb(file);
-    sha256Hex(file).then(hashHex => fileSha256 = hashHex);
+    sha256Hex(file).then(hashHex => currentChecksum = hashHex);
     $('#file-size-input').val(fileSizeToString(file.size));
     $('#file-name-input').val(file.name);
   }
@@ -421,15 +422,22 @@ $('#update-btn').click(event => {
 function updateFile(btn) {
   let file = null, fileSize = oldFile.size;
   let files = document.querySelector('#file-input').files;
-  if (files.length > 0) {
+
+  // 如果选择了文件，并且所选的是新文件。
+  if (files.length > 0 && currentChecksum != file.checksum) {
     file = files[0];
     fileSize = file.size;
+  }
+
+  // 如果所选的文件与旧文件一模一样。
+  if (currentChecksum == file.checksum) {
+    currentChecksum = '';
   }
 
   let form = new FormData();
   form.append('id', id);
   form.append('file', file);
-  form.append('checksum', fileSha256);
+  form.append('checksum', currentChecksum);
   form.append('file-name', $('#file-name-input').val()); // 在后端消除空格
   form.append('file-size', fileSize);
   form.append('description', $('#description-input').val());
