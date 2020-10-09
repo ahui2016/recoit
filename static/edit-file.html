@@ -242,6 +242,7 @@ function initData() {
       setFormData(reco);
       $('#section-toggle').show();
     } else {
+      $('#section-view').hide();
       insertErrorAlert(this.response.message);
     }
   });

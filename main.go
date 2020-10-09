@@ -44,7 +44,6 @@ func main() {
 
 	http.HandleFunc("/edit-file", checkLogin(editFilePage))
 	http.HandleFunc("/api/update-file", checkLogin(updateHandler))
-
 	http.HandleFunc("/api/reco", checkLogin(getRecoHandler))
 	http.HandleFunc("/api/delete-reco", checkLogin(deleteRecoHandler))
 	http.HandleFunc("/api/thumb", checkLogin(createThumbHandler))
@@ -282,7 +281,10 @@ func getRecoHandler(w http.ResponseWriter, r *http.Request) {
 
 func getAllRecos(w http.ResponseWriter, r *http.Request) {
 	var all []Reco
-	err := db.DB.Select(q.Eq("DeletedAt", "")).OrderBy("UpdatedAt").Find(&all)
+	err := db.DB.
+		Select(q.Eq("DeletedAt", ""), q.Gt("ID", "1")).
+		OrderBy("UpdatedAt").
+		Find(&all)
 	if checkErr(w, err, 500) {
 		return
 	}

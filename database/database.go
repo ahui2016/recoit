@@ -113,7 +113,7 @@ func (db *DB) Login(passphrase string) error {
 	if passphrase == "" {
 		return errors.New("password is empty")
 	}
-	reco, err := db.GetRecoByID("1")
+	reco, err := db.getFirstReco()
 	if err != nil {
 		return err
 	}
@@ -234,8 +234,18 @@ func (db *DB) IsFirstRecoExist() bool {
 
 // GetRecoByID .
 func (db *DB) GetRecoByID(id string) (*Reco, error) {
+	if id == "1" {
+		return nil, errors.New("not found id:1")
+	}
 	reco := new(Reco)
 	err := db.DB.One("ID", id, reco)
+	return reco, err
+}
+
+// getFisrtReco .
+func (db *DB) getFirstReco() (*Reco, error) {
+	reco := new(Reco)
+	err := db.DB.One("ID", "1", reco)
 	return reco, err
 }
 
@@ -250,6 +260,9 @@ func (db *DB) AccessCountUp(id string, count int64) error {
 
 // DeleteReco .
 func (db *DB) DeleteReco(id string) error {
+	if id == "1" {
+		return errors.New("not found id:1")
+	}
 	reco := Reco{ID: id}
 	return db.DB.UpdateField(&reco, "DeletedAt", util.TimeNow())
 }
@@ -317,11 +330,8 @@ func (db *DB) UpdateReco(oldReco, reco *Reco, objName string, objBody []byte) er
 	}
 	defer tx.Rollback()
 
-	// 删除再重写，相当于一次完全的更新。
+	// 重写，相当于一次完全的更新。
 	// 因为 storm 的 update 方法不可更新空值。
-	if err := tx.DeleteStruct(oldReco); err != nil {
-		return err
-	}
 	if err := tx.Save(reco); err != nil {
 		return err
 	}
