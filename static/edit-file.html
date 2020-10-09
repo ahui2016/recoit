@@ -190,6 +190,10 @@
 
         <input type="submit" disabled hidden />
         <button id="update-btn" type="button" class="btn btn-primary">Update</button>
+        <button id="update-spinner" class="btn btn-primary" style="display: none;" type="button" disabled>
+          Update
+          <span class="spinner-border spinner-border-sm" role="status"></span>
+        </button>
       </form>
 
     </div>
@@ -261,7 +265,7 @@ function setFormData(reco) {
   if (reco.FileType.startsWith('image')) {
     $('#thumbnail')
       .css('display', 'block')
-      .attr('src', thumbURL(reco.ID))
+      .attr('src', thumbUrlDate(reco.ID))
       .click(() => {
         // 如果缩略图已成功加载，点击缩略图会打开大图。
         if ($('#thumbnail')[0].naturalHeight > 0) {
@@ -424,13 +428,13 @@ function updateFile(btn) {
   let files = document.querySelector('#file-input').files;
 
   // 如果选择了文件，并且所选的是新文件。
-  if (files.length > 0 && currentChecksum != file.checksum) {
+  if (files.length > 0 && currentChecksum != oldFile.checksum) {
     file = files[0];
     fileSize = file.size;
   }
 
   // 如果所选的文件与旧文件一模一样。
-  if (currentChecksum == file.checksum) {
+  if (currentChecksum == oldFile.checksum) {
     currentChecksum = '';
   }
 
@@ -444,7 +448,7 @@ function updateFile(btn) {
   form.append('file-tags', JSON.stringify(recoTags));
   form.append('file-links', JSON.stringify(recoLinks));
 
-  ajaxPost(form, '/api/update-file', btn, function() {
+  ajaxPostWithSpinner(form, '/api/update-file', 'update', function() {
     if (this.status == 200) {
       insertSuccessAlert('OK. File Updated.');
       hideAllSections();
