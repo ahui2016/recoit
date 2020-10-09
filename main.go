@@ -367,7 +367,7 @@ func setupIbmCosHandler(w http.ResponseWriter, r *http.Request) {
 		BucketName:        strings.TrimSpace(r.FormValue("bucket-name")),
 		// BucketLocation:    strings.TrimSpace(r.FormValue("bucket-location")),
 	}
-	checkErr(w, db.SetupIbmCos(&settings, cosSettingsPath), 500)
+	checkErr(w, db.SetupIbmCos(&settings), 500)
 }
 
 func checkCloudSettings(w http.ResponseWriter, r *http.Request) {
@@ -430,7 +430,7 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 
 	// 当且只当 COS 未设置时才尝试设置。
 	if db.COS == nil {
-		if checkErr(w, db.LoadSettings(cosSettingsPath), 500) {
+		if checkErr(w, db.LoadSettings(), 500) {
 			return
 		}
 	}

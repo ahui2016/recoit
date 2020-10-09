@@ -26,7 +26,7 @@ const (
 	thumbFileExt         = ".small"
 	staticFolder         = "static"
 	// maxAge                 = 60 * 60 * 24 * 30 // 30 days, for session
-	maxAge         = 60
+	maxAge         = 60 * 30
 	secret         = "08-1303"
 	passwordMaxTry = 5
 )
@@ -43,7 +43,7 @@ var (
 var (
 	passwordTry = 0
 	htmlFiles   = make(map[string]string)
-	db          = database.NewDB(dbPath, cosSettingsPath)
+	db          = new(database.DB)
 )
 
 type (
@@ -68,7 +68,7 @@ func init() {
 	mustMkdir(cacheThumbDir)
 
 	// open the db here, close the db in main().
-	if err := db.Open(maxAge); err != nil {
+	if err := db.Open(maxAge, dbPath, cosSettingsPath); err != nil {
 		panic(err)
 	}
 }

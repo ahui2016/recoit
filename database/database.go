@@ -33,20 +33,13 @@ type DB struct {
 	Sess         *session.Manager
 }
 
-// NewDB 设置数据库文件的 path. 下一步需要执行 db.Open.
-func NewDB(dbPath, settingsPath string) *DB {
-	return &DB{
-		path:         dbPath,
-		settingsPath: settingsPath,
-	}
-}
-
-// Open 执行 storm.Open 等操作。必须先执行 NewDB 后才能执行 db.Open,
-// 并且要记得执行 db.Close.
-func (db *DB) Open(maxAge int) (err error) {
-	if db.DB, err = storm.Open(db.path); err != nil {
+// Open .
+func (db *DB) Open(maxAge int, dbPath, settingsPath string) (err error) {
+	if db.DB, err = storm.Open(dbPath); err != nil {
 		return err
 	}
+	db.path = dbPath
+	db.settingsPath = settingsPath
 	db.Sess = session.NewManager(maxAge)
 	log.Print(db.path)
 	return nil
@@ -154,7 +147,7 @@ func (db *DB) SetupIbmCos(settings *ibm.Settings) error {
 		return errors.New("require login")
 	}
 	cos := settings.NewCOS()
-	db.setupCloud(cos, settings)
+	return db.setupCloud(cos, settings)
 }
 
 func (db *DB) setupCloud(cos cloud.ObjectStorage, settings cloud.Settings) error {
