@@ -7,24 +7,34 @@ import (
 	"github.com/ahui2016/recoit/util"
 )
 
-// 软删除 Reco 时从 Collection.RecoIDs 中删除相关 id, 但不清空 Reco.Collections,
-// 从回收站恢复时询问用户是否重新添加到相关 Collection 中.
+// 软删除 Reco 时从 Box.RecoIDs 中删除相关 id, 但不清空 Reco.Boxes,
+// 从回收站恢复时询问用户是否重新添加到相关 Box 中.
 
-// 当 Reco.FileType 的值为 NotFile 时，表示该 reco 不含文件。
-const NotFile = "NotFile"
-
+// MinLength of Reco.FileName if Reco.Type is File.
 const MinLength = 3
 
+// RecoType 是一个枚举类型，用来表示 Reco 的类型。
+type RecoType string
+
+// File .
+const (
+	Others RecoType = ""
+	File   RecoType = "File"
+	First  RecoType = "First"
+)
+
+// Reco .
 type Reco struct {
-	ID          string   // primary key
-	Collections []string // a file can be in different collections. []Collection.ID
+	ID          string // primary key
+	Type        RecoType
+	Boxes       []string // a file can be in different boxes. []Box.ID
 	Message     string
 	Links       []string
 	Tags        []string // []Tag.Name
 	FileName    string   `storm:"index"`
 	FileSize    int64
-	FileType    string
 	Checksum    string `storm:"unique"` // hex(sha256)
+	FileType    string
 	AccessCount int64
 	AccessedAt  string `storm:"index"` // ISO8601
 	CreatedAt   string `storm:"index"`
@@ -32,36 +42,35 @@ type Reco struct {
 	DeletedAt   string `storm:"index"`
 }
 
-func NewReco(filename string) *Reco {
+// NewReco .
+func NewReco(recoType RecoType) *Reco {
 	now := util.TimeNow()
 	reco := &Reco{
 		ID:        util.NewID(),
 		CreatedAt: now,
 		UpdatedAt: now,
 	}
-	reco.FileName = strings.TrimSpace(filename)
-	if reco.FileName == "" {
-		reco.FileType = NotFile
-		return reco
-	}
-	reco.FileType = util.TypeByFilename(filename)
+	reco.Type = recoType
 	return reco
 }
 
+// NewFirstReco .
 func NewFirstReco() *Reco {
-	reco := NewReco("")
+	reco := NewReco(First)
 	reco.ID = "1"
 	return reco
 }
 
+// NewFile .
 func NewFile(filename string) (*Reco, error) {
-	if len(filename) < MinLength {
-		return nil, errors.New("filename is too short")
-	}
-	return NewReco(filename), nil
+	reco := NewReco(File)
+	reco.SetFileNameType(filename)
+	return reco, nil
 }
 
+// SetFileNameType .
 func (reco *Reco) SetFileNameType(filename string) error {
+	filename = strings.TrimSpace(filename)
 	if len(filename) < MinLength {
 		return errors.New("filename is too short")
 	}
@@ -70,18 +79,20 @@ func (reco *Reco) SetFileNameType(filename string) error {
 	return nil
 }
 
-func (a *Reco) EqualContent(b *Reco) bool {
-	if a.ID != b.ID {
+// EqualContent .
+func (reco *Reco) EqualContent(other *Reco) bool {
+	if reco.ID != other.ID {
 		return false
 	}
-	if util.SameSlice(a.Collections, b.Collections) &&
-		a.Message == b.Message &&
-		util.SameSlice(a.Links, b.Links) &&
-		util.SameSlice(a.Tags, b.Tags) &&
-		a.FileName == b.FileName &&
-		a.FileSize == b.FileSize &&
-		a.FileType == b.FileType &&
-		a.Checksum == b.Checksum {
+	if util.SameSlice(reco.Boxes, other.Boxes) &&
+		reco.Type == other.Type &&
+		reco.Message == other.Message &&
+		util.SameSlice(reco.Links, other.Links) &&
+		util.SameSlice(reco.Tags, other.Tags) &&
+		reco.FileName == other.FileName &&
+		reco.FileSize == other.FileSize &&
+		reco.FileType == other.FileType &&
+		reco.Checksum == other.Checksum {
 		return true
 	}
 	return false
@@ -114,7 +125,9 @@ func (tag *Tag) Remove(id string) {
 	tag.RecoIDs = util.DeleteFromSlice(tag.RecoIDs, i)
 }
 
-type Collection struct {
+// Box 像一个快递纸箱，可以装入各种不同类型的 Reco.
+// 通常纸箱不会很大，但暂时不限制大小。
+type Box struct {
 	ID        string   // primary key
 	Title     string   `storm:"unique"`
 	RecoIDs   []string // []Reco.ID // 允许用户排序(顶置)

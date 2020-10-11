@@ -122,8 +122,7 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 新建一个 Reco, 获得其 ID
-	filename := strings.TrimSpace(r.FormValue("file-name"))
-	reco, err := model.NewFile(filename)
+	reco, err := model.NewFile(r.FormValue("file-name"))
 	if checkErr(w, err, 400) {
 		return
 	}

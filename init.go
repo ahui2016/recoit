@@ -46,10 +46,11 @@ var (
 	db          = new(database.DB)
 )
 
+// Types from model.
 type (
-	Reco       = model.Reco
-	Tag        = model.Tag
-	Collection = model.Collection
+	Reco = model.Reco
+	Tag  = model.Tag
+	Box  = model.Box
 )
 
 func init() {

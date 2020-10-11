@@ -18,9 +18,9 @@ import (
 
 // Types from model.
 type (
-	Reco       = model.Reco
-	Tag        = model.Tag
-	Collection = model.Collection
+	Reco = model.Reco
+	Tag  = model.Tag
+	Box  = model.Box
 )
 
 // DB 将数据库、加密、云储存三大功能汇于一身。
@@ -102,7 +102,7 @@ func (db *DB) createIndexes() error {
 	if err := db.DB.Init(&Tag{}); err != nil {
 		return err
 	}
-	if err := db.DB.Init(&Collection{}); err != nil {
+	if err := db.DB.Init(&Box{}); err != nil {
 		return err
 	}
 	return nil
