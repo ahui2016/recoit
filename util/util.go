@@ -7,6 +7,7 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"io"
+	"io/ioutil"
 	"math/big"
 	"mime"
 	"os"
@@ -163,7 +164,16 @@ func CreateReturnFile(filePath string, src io.Reader) (int64, *os.File, error) {
 
 // CreateThumb .
 func CreateThumb(imgPath, thumbPath string) error {
-	buf, err := graphics.Thumbnail(imgPath)
+	img, err := ioutil.ReadFile(imgPath)
+	if err != nil {
+		return err
+	}
+	return BytesToThumb(img, thumbPath)
+}
+
+// BytesToThumb .
+func BytesToThumb(img []byte, thumbPath string) error {
+	buf, err := graphics.Thumbnail(img)
 	if err != nil {
 		return err
 	}

@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/ahui2016/recoit/database"
+	"github.com/ahui2016/recoit/graphics"
 	"github.com/ahui2016/recoit/model"
 	"github.com/ahui2016/recoit/util"
 )
@@ -128,12 +129,14 @@ func jsonRequireLogin(w http.ResponseWriter) {
 	jsonMessage(w, "Require Login", http.StatusUnauthorized)
 }
 
+// jsonMessage 主要用于向前端返回出错消息。
 func jsonMessage(w http.ResponseWriter, message string, code int) {
 	msg := map[string]string{"message": message}
 	jsonResponse(w, msg, code)
 }
 
-// https://stackoverflow.com/questions/59763852/can-you-return-json-in-golang-http-error
+// jsonResponse 要用于向前端返回有用数据。
+// 参考 https://stackoverflow.com/questions/59763852/can-you-return-json-in-golang-http-error
 func jsonResponse(w http.ResponseWriter, obj interface{}, code int) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
@@ -149,15 +152,33 @@ func cacheThumbPath(id string) string {
 	return filepath.Join(cacheThumbDir, id+thumbFileExt)
 }
 
+// writeCacheFile 在服务器保留缓存文件，如果是图片则顺便生成缩略图，
+// 如果是图片并且不是 gif 动图，则压缩图片尺寸。
 func writeCacheFile(file *Reco, fileContents []byte) error {
 	filePath := cacheFilePath(file.ID)
-	if err := ioutil.WriteFile(filePath, fileContents, 0600); err != nil {
-		return err
+	thumbPath := cacheThumbPath(file.ID)
+
+	// 当且只当是图片但不是 gif 时，才压缩图片尺寸。
+	if file.IsImage() && file.IsNotGIF() {
+		buf, err := graphics.ResizeLimit(fileContents)
+		if err != nil {
+			return err
+		}
+		if err := util.CreateFile(filePath, buf); err != nil {
+			return err
+		}
+	} else {
+		// 否则就直接写文件。
+		err := ioutil.WriteFile(filePath, fileContents, 0600)
+		if err != nil {
+			return err
+		}
 	}
-	// 如果该文件是图片，则顺便生成缩略图。
-	if strings.HasPrefix(file.FileType, "image") {
-		thumbPath := cacheThumbPath(file.ID)
-		if err := util.CreateThumb(filePath, thumbPath); err != nil {
+
+	// 如果时图片则一律生成缩略图
+	if file.IsImage() {
+		err := util.BytesToThumb(fileContents, thumbPath)
+		if err != nil {
 			return err
 		}
 	}

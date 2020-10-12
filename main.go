@@ -180,7 +180,7 @@ func updateHandler(w http.ResponseWriter, r *http.Request) {
 	// 在 getFileContents 里更改了 r.Body
 	fileContents, err := getFileContents(w, r)
 	if err != nil && err != http.ErrMissingFile {
-		jsonResponse(w, err, 500)
+		jsonMessage(w, err.Error(), 500)
 		return
 	}
 

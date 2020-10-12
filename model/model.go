@@ -79,6 +79,16 @@ func (reco *Reco) SetFileNameType(filename string) error {
 	return nil
 }
 
+// IsImage .
+func (reco *Reco) IsImage() bool {
+	return strings.HasPrefix(reco.FileType, "image")
+}
+
+// IsNotGIF .
+func (reco *Reco) IsNotGIF() bool {
+	return reco.FileType != "image/gif"
+}
+
 // EqualContent .
 func (reco *Reco) EqualContent(other *Reco) bool {
 	if reco.ID != other.ID {
