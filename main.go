@@ -46,7 +46,7 @@ func main() {
 	http.HandleFunc("/api/update-file", checkLogin(updateHandler))
 	http.HandleFunc("/api/reco", checkLogin(getRecoHandler))
 	http.HandleFunc("/api/delete-reco", checkLogin(deleteRecoHandler))
-	http.HandleFunc("/api/thumb", checkLogin(createThumbHandler))
+	http.HandleFunc("/api/create-thumb", checkLogin(createThumbHandler))
 
 	http.HandleFunc("/setup-cloud/ibm", setupIbmCosPage)
 	http.HandleFunc("/api/setup-ibm-cos", setupIbmCosHandler)
@@ -310,20 +310,17 @@ func createThumbHandler(w http.ResponseWriter, r *http.Request) {
 
 	// 验证这个文件是图片（省略，因为省略也不会出大问题）
 
-	if util.PathIsNotExist(thumbPath) {
+	// 本来还要检查缩略图是否存在，但为了同时适用于别的场景
+	// （比如缩略图存在，但大图不存在的情况）因此不检查缩略图是否存在。
 
-		// 如果 imgPath 不存在，则从 COS 获取文件
-		if util.PathIsNotExist(imgPath) {
-			err := db.DownloadDecrypt(addRecoExt(id), imgPath)
-			if checkErr(w, err, 500) {
-				return
-			}
-		}
-
-		err := util.CreateThumb(imgPath, thumbPath)
+	if util.PathIsNotExist(imgPath) {
+		err := db.DownloadDecrypt(addRecoExt(id), imgPath)
 		if checkErr(w, err, 500) {
 			return
 		}
+	}
+	if checkErr(w, util.CreateThumb(imgPath, thumbPath), 500) {
+		return
 	}
 }
 

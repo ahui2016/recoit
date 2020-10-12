@@ -76,10 +76,13 @@
       <div id="section-view" style="margin: 50px 0 50px 0;">
         <img id="thumbnail" class="img-thumbnail" alt="click to load the thumbnail" 
             style="width: 138px; height: 138px; display: none; cursor: pointer;">
-        <img id="big-image" alt="click to hide" title="click to hide"
+        <img id="big-image" alt="click to load the image"
             class="img-fluid" style="display: none; cursor: pointer;">
         <div class="mb-3">
-          <a id="download-btn"><img src="/public/icons/download.svg" alt="download icon"></a>
+          <a id="download-btn">
+            <img src="/public/icons/download.svg" alt="download icon"
+                title="下载原图" data-toggle="tooltip">
+          </a>
           <div id="file-size" style="display: inline;"></div>
           <div id="file-tags" style="display: inline;">
             <template id="tag-tmpl">
@@ -224,6 +227,7 @@ function initData() {
   ajaxPost(form, '/api/reco', null, function(){
     if (this.status == 200) {
       let reco = this.response;
+      console.log(reco);
       oldFile = {
         size: fileSizeToString(reco.FileSize),
         name: reco.FileName,
@@ -264,34 +268,48 @@ function setReadonlyData(reco) {
 
 function setFormData(reco) {
   if (reco.FileType.startsWith('image')) {
+    let form = new FormData();
+    form.append('id', id);
+
     $('#thumbnail')
       .css('display', 'block')
-      .attr('src', thumbUrlDate(reco.ID))
+      .attr('src', urlWithDate(thumbURL(reco.ID)))
       .click(() => {
         // 如果缩略图已成功加载，点击缩略图会打开大图。
         if ($('#thumbnail')[0].naturalHeight > 0) {
           $('#thumbnail').hide();
-          $('#big-image')
-            .attr('src', cacheURL(reco.ID))
-            .show();
+          $('#big-image').show();
           return;
         }
         // 如果缩略图加载失败，点击缩略图可向服务器申请生成缩略图。
-        let form = new FormData();
-        form.append('id', id);
-        ajaxPost(form, '/api/thumb', null, function() {
+        ajaxPost(form, '/api/create-thumb', null, function() {
           if (this.status == 200) {
-            $('#thumbnail').attr('src', thumbUrlDate(id));
+            $('#thumbnail').attr('src', urlWithDate(thumbURL(id)));
           } else {
             insertErrorAlert(this.response.message);
           }
         });
       });
+
+    $('#big-image')
+      .attr('src', cacheURL(reco.ID))
+      .click(() => {
+        // 如果大图加载失败，则申请生成大图缓存。
+        if ($('#big-image')[0].naturalHeight <= 0) {
+          ajaxPost(form, '/api/create-thumb', null, function() {
+            if (this.status == 200) {
+              $('#big-image').attr('src', urlWithDate(cacheURL(id)));
+            } else {
+              insertErrorAlert(this.response.message);
+            }
+          });
+          return      
+        }
+        // 如果大图加载成功，点击大图恢复缩略图。
+        $('#big-image').hide();
+        $('#thumbnail').show();
+    });
   }
-  $('#big-image').click(() => {
-    $('#big-image').hide();
-    $('#thumbnail').show();
-  });
   $('#file-size-input').val(fileSizeToString(reco.FileSize));
   $('#file-name-input').val(reco.FileName);
   $('#description-input').val(reco.Message);

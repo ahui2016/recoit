@@ -157,9 +157,9 @@ function cacheURL(id) {
   return '/cache/' + id + '.reco';
 }
 
-function thumbUrlDate(id) {
+function urlWithDate(originURL) {
   let d = new Date();
-  return thumbURL(id) + '?' + d.getTime();
+  return originURL + '?' + d.getTime();
 }
 
 // Convert `FileReader.readAsDataURL` to promise style.
