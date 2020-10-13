@@ -144,6 +144,10 @@ func jsonResponse(w http.ResponseWriter, obj interface{}, code int) {
 	json.NewEncoder(w).Encode(obj)
 }
 
+func tempFilePath(id string) string {
+	return filepath.Join(tempDir, addRecoExt(id))
+}
+
 func cacheFilePath(id string) string {
 	return filepath.Join(cacheDir, addRecoExt(id))
 }
@@ -154,8 +158,10 @@ func cacheThumbPath(id string) string {
 
 // writeCacheFile 在服务器保留缓存文件，如果是图片则顺便生成缩略图，
 // 如果是图片并且不是 gif 动图，则压缩图片尺寸。
+// 被压缩的图片与未经处理的文件保存在不同的文件夹。
 func writeCacheFile(file *Reco, fileContents []byte) error {
-	filePath := cacheFilePath(file.ID)
+	tempPath := tempFilePath(file.ID)
+	cachePath := cacheFilePath(file.ID)
 	thumbPath := cacheThumbPath(file.ID)
 
 	// 当且只当是图片但不是 gif, 并且图片体积大于极限时，才压缩图片尺寸。
@@ -164,12 +170,12 @@ func writeCacheFile(file *Reco, fileContents []byte) error {
 		if err != nil {
 			return err
 		}
-		if err := util.CreateFile(filePath, buf); err != nil {
+		if err := util.CreateFile(cachePath, buf); err != nil {
 			return err
 		}
 	} else {
 		// 否则就直接写文件。
-		err := ioutil.WriteFile(filePath, fileContents, 0600)
+		err := ioutil.WriteFile(tempPath, fileContents, 0600)
 		if err != nil {
 			return err
 		}
@@ -188,4 +194,22 @@ func writeCacheFile(file *Reco, fileContents []byte) error {
 // addRecoExt adds '.reco' to name.
 func addRecoExt(name string) string {
 	return name + recoFileExt
+}
+
+// cacheFileUrl 返回前端访问缓存文件的 url (通常是被压缩尺寸的图片)
+func cacheFileURL(name string) string {
+	return "/cache/" + addRecoExt(name)
+}
+
+// tempFileUrl 返回前端访问临时文件的 url (通常是原图或原文件)
+func tempFileURL(name string) string {
+	return "/temp/" + addRecoExt(name)
+}
+
+func checkIDempty(w http.ResponseWriter, id string) bool {
+	if id == "" {
+		jsonMessage(w, "id is empty", 400)
+		return true
+	}
+	return false
 }

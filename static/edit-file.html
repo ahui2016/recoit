@@ -81,8 +81,12 @@
         <div class="mb-3">
           <a id="download-btn">
             <img src="/public/icons/download.svg" alt="download icon"
-                title="下载原图" data-toggle="tooltip">
+                title="下载文件/原图" data-toggle="tooltip" style="cursor: pointer;">
           </a>
+          <span id="download-spinner" style="display: none;" role="status"
+                class="spinner-border spinner-border-sm text-secondary">
+            <span class="sr-only">Loading...</span>
+          </span>
           <div id="file-size" style="display: inline;"></div>
           <div id="file-tags" style="display: inline;">
             <template id="tag-tmpl">
@@ -259,11 +263,24 @@ function setReadonlyData(reco) {
   $('#file-size').text(fileSizeToString(reco.FileSize));
   $('#file-name').text(reco.FileName);
   $('#description').text(reco.Message);
-  $('#download-btn') // 后续需要增加从 COS 下载文件到缓存文件夹的功能。
-    .attr('href', cacheURL(reco.ID))
-    .attr('download', reco.FileName);
   recoTags.forEach(tag => insertTag(tag));
   recoLinks.forEach(link => insertLink(link));
+
+  $('#download-btn').click(() => {
+    let form = new FormData();
+    form.append('id', id);
+    ajaxPostWithSpinner(form, '/api/download-file', 'download', function(){
+      if (this.status == 200) {
+        $('#download-btn')
+          .off()
+          .attr('href', this.response.message)
+          .attr('download', reco.FileName)
+          [0].click();
+      } else {
+        insertErrorAlert(this.response.message);
+      }
+    });
+  });
 }
 
 function setFormData(reco) {
@@ -273,7 +290,7 @@ function setFormData(reco) {
 
     $('#thumbnail')
       .css('display', 'block')
-      .attr('src', urlWithDate(thumbURL(reco.ID)))
+      .attr('src', urlWithDate(thumbURL(id)))
       .click(() => {
         // 如果缩略图已成功加载，点击缩略图会打开大图。
         if ($('#thumbnail')[0].naturalHeight > 0) {
@@ -292,7 +309,7 @@ function setFormData(reco) {
       });
 
     $('#big-image')
-      .attr('src', urlWithDate(cacheURL(reco.ID)))
+      .attr('src', urlWithDate(cacheURL(id)))
       .click(() => {
         // 如果大图加载失败，则申请生成大图缓存。
         if ($('#big-image')[0].naturalHeight <= 0) {

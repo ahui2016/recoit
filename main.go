@@ -23,6 +23,10 @@ func main() {
 	fs := http.FileServer(http.Dir("public"))
 	http.Handle("/public/", http.StripPrefix("/public/", fs))
 
+	tempFS := http.FileServer(http.Dir(tempDir))
+	tempFS = http.StripPrefix("/temp/", tempFS)
+	http.Handle("/temp/", checkLoginForFileServer(tempFS))
+
 	cacheFS := http.FileServer(http.Dir(cacheDir))
 	cacheFS = http.StripPrefix("/cache/", cacheFS)
 	http.Handle("/cache/", checkLoginForFileServer(cacheFS))
@@ -47,6 +51,7 @@ func main() {
 	http.HandleFunc("/api/reco", checkLogin(getRecoHandler))
 	http.HandleFunc("/api/delete-reco", checkLogin(deleteRecoHandler))
 	http.HandleFunc("/api/create-thumb", checkLogin(createThumbHandler))
+	http.HandleFunc("/api/download-file", checkLogin(downloadFile))
 
 	http.HandleFunc("/setup-cloud/ibm", setupIbmCosPage)
 	http.HandleFunc("/api/setup-ibm-cos", setupIbmCosHandler)
@@ -57,7 +62,7 @@ func main() {
 	http.HandleFunc("/api/is-account-exist", isAccountExist)
 
 	http.HandleFunc("/login", loginPage)
-	http.HandleFunc("/logout", logoutPage)
+	http.HandleFunc("/logout", logoutHandler)
 	http.HandleFunc("/api/login", loginHandler)
 	http.HandleFunc("/api/check-login", checkLoginHandler)
 	http.HandleFunc("/api/check-cos", checkCOS)
@@ -300,8 +305,7 @@ func deleteRecoHandler(w http.ResponseWriter, r *http.Request) {
 
 func createThumbHandler(w http.ResponseWriter, r *http.Request) {
 	id := r.FormValue("id")
-	if id == "" {
-		jsonMessage(w, "id is empty", 400)
+	if checkIDempty(w, id) {
 		return
 	}
 
@@ -319,9 +323,7 @@ func createThumbHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	if checkErr(w, util.CreateThumb(imgPath, thumbPath), 500) {
-		return
-	}
+	checkErr(w, util.CreateThumb(imgPath, thumbPath), 500)
 }
 
 func getRecosByTag(w http.ResponseWriter, r *http.Request) {
@@ -432,8 +434,31 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 	db.Sess.Add(w, util.NewID())
 }
 
-func logoutPage(w http.ResponseWriter, r *http.Request) {
+func logoutHandler(w http.ResponseWriter, r *http.Request) {
 	db.Reset()
 	db.Sess.DeleteSID(w, r)
 	http.Redirect(w, r, "/login", http.StatusTemporaryRedirect)
+}
+
+func downloadFile(w http.ResponseWriter, r *http.Request) {
+	id := r.FormValue("id")
+	if checkIDempty(w, id) {
+		return
+	}
+
+	// 如果 cache 文件夹有文件，就直接使用。
+	if util.PathIsExist(cacheFilePath(id)) {
+		jsonMessage(w, cacheFileURL(id), 200)
+		return
+	}
+
+	// 如果 cache 文件夹找不到文件，就下载到 temp 文件夹里。
+	tempFile := tempFilePath(id)
+	if util.PathIsNotExist(tempFile) {
+		err := db.DownloadDecrypt(addRecoExt(id), tempFile)
+		if checkErr(w, err, 500) {
+			return
+		}
+	}
+	jsonMessage(w, tempFileURL(id), 200)
 }

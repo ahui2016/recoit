@@ -157,6 +157,10 @@ function cacheURL(id) {
   return '/cache/' + id + '.reco';
 }
 
+function tempURL(id) {
+  return '/temp/' + id + '.reco';
+}
+
 function urlWithDate(originURL) {
   let d = new Date();
   return originURL + '?' + d.getTime();
