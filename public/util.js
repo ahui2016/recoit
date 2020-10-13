@@ -1,5 +1,6 @@
 const thumbWidth = 128, thumbHeight = 128;
 
+// 向服务器提交表单，在等待过程中 btn 会失效，避免重复提交。
 function ajaxPost(form, url, btn, onloadHandler) {
   if (btn) {
     btn.prop('disabled', true);
@@ -24,6 +25,8 @@ function ajaxPost(form, url, btn, onloadHandler) {
   xhr.send(form);
 }
 
+// 向服务器提交表单，在等待过程中名为 button_name 的按钮会隐藏，
+// 同时同名的 spinner 会出现，暗示用户耐心等待，同时避免重复提交。
 function ajaxPostWithSpinner(form, url, button_name, onloadHandler) {
   if (button_name) {
     $(`#${button_name}-btn`).hide();
@@ -47,6 +50,7 @@ function ajaxPostWithSpinner(form, url, button_name, onloadHandler) {
   xhr.send(form);
 }
 
+// 从服务器获取数据。
 function ajaxGet(url, btn, onloadHandler) {
   if (btn) {
     btn.prop('disabled', true);
@@ -71,6 +75,7 @@ function ajaxGet(url, btn, onloadHandler) {
   xhr.send();
 }
 
+// 插入出错提示
 function insertErrorAlert(errMsg, alertTmpl) {
   if (alertTmpl == null) {
     alertTmpl = $('#alert-danger-tmpl');
@@ -81,6 +86,7 @@ function insertErrorAlert(errMsg, alertTmpl) {
   errAlert.insertAfter(alertTmpl);
 }
 
+// 插入成功提示
 function insertSuccessAlert(msg) {
   console.log(msg);
   let errAlert = $('#alert-success-tmpl').contents().clone();
@@ -88,6 +94,7 @@ function insertSuccessAlert(msg) {
   errAlert.insertAfter('#alert-success-tmpl');
 }
 
+// 把文件大小换算为 KB 或 MB
 function fileSizeToString(fileSize) {
   sizeMB = fileSize / 1024 / 1024;
   if (sizeMB < 1) {

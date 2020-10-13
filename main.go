@@ -305,7 +305,7 @@ func deleteRecoHandler(w http.ResponseWriter, r *http.Request) {
 
 func createThumbHandler(w http.ResponseWriter, r *http.Request) {
 	id := r.FormValue("id")
-	if checkIDempty(w, id) {
+	if checkIDEmpty(w, id) {
 		return
 	}
 
@@ -442,7 +442,7 @@ func logoutHandler(w http.ResponseWriter, r *http.Request) {
 
 func downloadFile(w http.ResponseWriter, r *http.Request) {
 	id := r.FormValue("id")
-	if checkIDempty(w, id) {
+	if checkIDEmpty(w, id) {
 		return
 	}
 

@@ -30,8 +30,8 @@
   color: black;
   text-decoration: none;
 }
-#links-inputted li:hover .LinkAddress {
-  text-decoration: underline;
+#links-inputted img:hover {
+  cursor: pointer;
 }
     </style>
 
@@ -39,6 +39,8 @@
 
   <body>
     <div class="container" style="max-width: 680px; min-width: 400px;">
+
+      <!-- 顶端导航栏 -->
       <nav class="navbar navbar-light bg-light mt-1">
           <span class="navbar-brand mb-0 h1">Edit File</span>
           <div class="btn-toolbar" role="toolbar" aria-label="nav bar">
@@ -63,7 +65,7 @@
         </div>
       </template>
 
-      <!--错误提示-->
+      <!--出错提示-->
       <template id="alert-danger-tmpl">
         <div class="alert alert-danger alert-dismissible fade show" role="alert">
             <span class="AlertMessage"></span>
@@ -73,12 +75,22 @@
         </div>
       </template>
 
+      <!-- 只读区域，展示该文件的文件名、缩略图、标签等 -->
       <div id="section-view" style="margin: 50px 0 50px 0;">
+
+        <!-- 缩略图，如果加载失败，点击缩略图区域可尝试重新加载 -->
+        <!-- 如果缩略图加载成功，点击缩略图可打开大图 -->
         <img id="thumbnail" class="img-thumbnail" alt="click to load the thumbnail" 
             style="width: 138px; height: 138px; display: none; cursor: pointer;">
+
+        <!-- 大图，如果加载失败，点击大图区域可尝试重新加载 -->
+        <!-- 如果大图加载成功，点击大图可变回缩略图 -->
         <img id="big-image" alt="click to load the image"
             class="img-fluid" style="display: none; cursor: pointer;">
+
         <div class="mb-3">
+
+          <!-- 下载按钮 -->
           <a id="download-btn">
             <img src="/public/icons/download.svg" alt="download icon"
                 title="下载文件/原图" data-toggle="tooltip" style="cursor: pointer;">
@@ -87,39 +99,66 @@
                 class="spinner-border spinner-border-sm text-secondary">
             <span class="sr-only">Loading...</span>
           </span>
+
+          <!-- 文件大小 -->
           <div id="file-size" style="display: inline;"></div>
+
+          <!-- 标签，可点击 -->
           <div id="file-tags" style="display: inline;">
             <template id="tag-tmpl">
               <a href="#" class="badge badge-secondary"></a>
             </template>
           </div>
         </div>
+
+        <!-- 文件名 -->
         <p id="file-name" class="mb-0 text-break" style="font-weight: bold;"></p>
+
+        <!-- 关于文件的详细描述 -->
         <p id="description"></p>
+
+        <!-- 相关链接 -->
         <ul id="links" class="list-group list-group-flush small">
           <template id="link-tmpl">
             <li class="list-group-item d-flex align-items-center pl-1 py-1">
               <img src="/public/icons/link.svg" alt="link icon">
-              <a class="LinkAddress ml-1"></a>
+              <a class="LinkAddress ml-1" target="_blank"></a>
             </li>
           </template>
         </ul>
       </div>
 
-      <div id="section-toggle" class="custom-control custom-switch" style="display: none;">
+      <!-- 编辑按钮，点击该按钮可切换编辑状态 -->
+      <div id="section-toggle" class="custom-control custom-switch">
         <input type="checkbox" id="toggle-edit" class="custom-control-input">
-        <label class="custom-control-label" for="toggle-edit">Toggle Edit Mode</label>
-        <span id="delete-file" style="display: none;"> | 
-          <a id="delete-file-btn" href="#" style="color: red;">delete file</a>
+        <label class="custom-control-label" for="toggle-edit">
+          Toggle Edit Mode
+        </label>
+
+        <!-- 高级按钮，就是一些不知道放在哪里好的按钮 -->
+        <span id="advanced-buttons" style="display: none;"> . 
+
+          <!-- 点击这里打开编辑 Boxes(纸箱) 的页面 -->
+          <a id="edit-boxes" href="#" target="_blank" style="color: blue;">Boxes</a>
+          <small>
+            <sup><img src="/public/icons/box-arrow-up-right.svg" alt="↗"></sup>
+          </small> .
+
+          <!-- 删除按钮，把该文件扔进垃圾桶 -->
+          <a id="delete-file-btn" href="#" style="color: red;">delete</a>
         </span>
+
+        <!-- 进一步确认是否删除 -->
         <span id="delete-confirm" style="display: none;"> | 
           <span style="color: red;">move to recycle bin?</span>
           <button id="delete-yes-btn">Yes</button> <button id="delete-no-btn">No</button>
         </span>
       </div>
 
+      <!-- 编辑文件内容的表单 -->
       <form id="file-form" autocomplete="off" style="margin: 50px 0 50px 0; display: none;">
 
+        <!-- 替换文件 -->
         <div class="form-group row">
           <label for="file-input" class="col-sm-2 col-form-label">Replace File</label>
           <div class="col-sm-10">
@@ -127,6 +166,7 @@
           </div>
         </div>
 
+        <!-- 缩略图 -->
         <div class="form-group row" id="new-thumb" style="display: none;">
           <div class="col-sm-2 col-form-label">Thumbnail</div>
           <div class="col-sm-10">
@@ -134,6 +174,7 @@
           </div>
         </div>
 
+        <!-- 文件大小 -->
         <div class="form-group row">
           <label for="file-size-input" class="col-sm-2 col-form-label">File Size</label>
           <div class="col-sm-10">
@@ -141,13 +182,19 @@
           </div>
         </div>
 
+        <!-- 文件名 -->
         <div class="form-group row">
-          <label for="file-name-input" class="col-sm-2 col-form-label">File Name</label>
+          <label for="file-name-input" class="col-sm-2 col-form-label">
+            File Name
+            <img src="/public/icons/info-circle.svg" alt="info" data-toggle="tooltip"
+                title="后缀名/扩展名重要，请保留。" />
+          </label>
           <div class="col-sm-10">
             <input type="text" class="form-control" id="file-name-input">
           </div>
         </div>
 
+        <!-- 标签 -->
         <div class="form-group row">
           <label for="tags-input" class="col-sm-2 col-form-label">Tags</label>
           <div class="col-sm-10">
@@ -155,6 +202,7 @@
           </div>
         </div>
 
+        <!-- 关于文件的详细描述 -->
         <div class="form-group row">
           <label for="description-input" class="col-sm-2 col-form-label">Description</label>
           <div class="col-sm-10">
@@ -162,6 +210,7 @@
           </div>
         </div>
 
+        <!-- 链接/网址输入框 -->
         <div class="form-group row">
           <label for="link-input" class="col-sm-2 col-form-label">Links</label>
           <div id="link-input-group" class="input-group col-sm-10">
@@ -172,13 +221,14 @@
           </div>
         </div>
 
+        <!-- 链接/网址列表，鼠标在上面时显示删除按钮 -->
         <div class="form-group row">
           <label for="links-inputted" class="col-sm-2 col-form-label"></label>
           <ul id="links-inputted" style="padding-left: 1em;"
               class="input-group col-sm-10 list-group list-group-flush small">
             <template id="link-input-tmpl">
               <li class="list-group-item d-flex align-items-center pl-1 py-1">
-                <a class="LinkAddress ml-1" target="_blank"></a>
+                <span class="LinkAddress ml-1"></span>
                 <img src="/public/icons/x-circle-fill.svg" class="ml-auto DeleteButton" alt="del">
               </li>
             </template>
@@ -195,62 +245,69 @@
           </div>
         </template>
 
-        <input type="submit" disabled hidden />
-        <button id="update-btn" type="button" class="btn btn-primary">Update</button>
-        <button id="update-spinner" class="btn btn-primary" style="display: none;" type="button" disabled>
-          Update
-          <span class="spinner-border spinner-border-sm" role="status"></span>
-        </button>
+        <!-- 提交表单的按钮 -->
+        <div style="margin-top: 30px;">
+          <input type="submit" disabled hidden /><!-- 防止回车提交表单 -->
+          <button id="update-btn" type="button" class="btn btn-primary">Update</button>
+          <button id="update-spinner" class="btn btn-primary" style="display: none;" type="button" disabled>
+            Update
+            <span class="spinner-border spinner-border-sm" role="status"></span>
+          </button>  
+        </div>
       </form>
 
     </div>
 
     <script>
+    // 如果有些函数在这里找不到，那就是在 util.js 里。
 
-$(function () {
-    $('[data-toggle="tooltip"]').tooltip()
-})
-
-let id = getUrlParam('id');
-initData();
-
+// 初始化一些全局变量
 let recoTags = [], recoLinks = [];
 let oldFile = {};
 let currentChecksum = '';
+let id = getUrlParam('id');
+let id_form = new FormData();
+id_form.append('id', id);
 
-// 自动在标签前加井号
-$('#tags-input').blur(() => {
-  recoTags = getNewTags();
-  $('#tags-input').val(addPrefix(recoTags, '#'));
-});
-
+// 初始化页面内容，在该函数内主要初始化需要从服务器获取数据的内容。
+initData();
 function initData() {
-  let form = new FormData();
-  form.append('id', id);
 
-  ajaxPost(form, '/api/reco', null, function(){
+  // 从服务器获取数据
+  ajaxPost(id_form, '/api/reco', null, function(){
+
+    // 成功获取数据
     if (this.status == 200) {
       let reco = this.response;
-      console.log(reco);
+
+      // 如果该记录已被扔进垃圾桶，则不显示。
+      if (reco.DeletedAt != "") {
+        $('#section-view').hide();
+        $('#section-toggle').hide();
+        insertSuccessAlert('This file has been move to recycle bin.');
+        return
+      }
+
+      // 将一些需要重复使用的数据保存到全局变量中
       oldFile = {
         size: fileSizeToString(reco.FileSize),
         name: reco.FileName,
         checksum: reco.Checksum,
       };
-
-      if (reco.DeletedAt != "") {
-        $('#section-view').hide();
-        insertSuccessAlert('This file has been move to recycle bin.');
-        return
-      }
-
       if (reco.Tags) recoTags = Array.from(reco.Tags);
       if (reco.Links) recoLinks = Array.from(reco.Links);
+
+      // 初始化文件名、缩略图等内容
       setReadonlyData(reco);
+
+      // 初始化表单内容
       setFormData(reco);
-      $('#section-toggle').show();
+
     } else {
+
+      // 获取数据失败，显示出错消息。
       $('#section-view').hide();
+      $('#section-toggle').hide();
       insertErrorAlert(this.response.message);
     }
   });
@@ -259,17 +316,64 @@ function initData() {
   $('#toggle-edit').prop('checked', false);
 }
 
+// 初始化文件名、缩略图等内容
 function setReadonlyData(reco) {
+  
+  // 如果该文件是图片，则需要初始化缩略图等
+  if (reco.FileType.startsWith('image')) {
+
+    // 初始化缩略图
+    $('#thumbnail')
+      .css('display', 'block')
+      .attr('src', urlWithDate(thumbURL(id)))
+      .click(() => {
+        // 如果缩略图已成功加载，点击缩略图会打开大图。
+        if ($('#thumbnail')[0].naturalHeight > 0) {
+          $('#thumbnail').hide();
+          $('#big-image').show();
+          return;
+        }
+        // 如果缩略图加载失败，点击缩略图可向服务器申请生成缩略图。
+        ajaxPost(id_form, '/api/create-thumb', null, function() {
+          if (this.status == 200) {
+            $('#thumbnail').attr('src', urlWithDate(thumbURL(id)));
+          } else {
+            insertErrorAlert(this.response.message);
+          }
+        });
+      });
+
+    // 初始化大图
+    $('#big-image')
+      .attr('src', urlWithDate(cacheURL(id)))
+      .click(() => {
+        // 如果大图加载失败，则申请生成大图缓存。
+        if ($('#big-image')[0].naturalHeight <= 0) {
+          ajaxPost(id_form, '/api/create-thumb', null, function() {
+            if (this.status == 200) {
+              $('#big-image').attr('src', urlWithDate(cacheURL(id)));
+            } else {
+              insertErrorAlert(this.response.message);
+            }
+          });
+          return      
+        }
+        // 如果大图加载成功，点击大图可变回缩略图。
+        $('#big-image').hide();
+        $('#thumbnail').show();
+      });
+  }
   $('#file-size').text(fileSizeToString(reco.FileSize));
   $('#file-name').text(reco.FileName);
   $('#description').text(reco.Message);
   recoTags.forEach(tag => insertTag(tag));
   recoLinks.forEach(link => insertLink(link));
 
+  // 这是下载原图/原文件的按钮。点击该按钮时：
+  // A. 如果在服务器里没有缓存，服务器会从 COS 下载回来。
+  // A. 如果在服务器里有缓存，服务器会返回该文件的 url (在 this.response.message 里)。
   $('#download-btn').click(() => {
-    let form = new FormData();
-    form.append('id', id);
-    ajaxPostWithSpinner(form, '/api/download-file', 'download', function(){
+    ajaxPostWithSpinner(id_form, '/api/download-file', 'download', function(){
       if (this.status == 200) {
         $('#download-btn')
           .off()
@@ -283,57 +387,50 @@ function setReadonlyData(reco) {
   });
 }
 
+// 初始化表单内容
 function setFormData(reco) {
-  if (reco.FileType.startsWith('image')) {
-    let form = new FormData();
-    form.append('id', id);
-
-    $('#thumbnail')
-      .css('display', 'block')
-      .attr('src', urlWithDate(thumbURL(id)))
-      .click(() => {
-        // 如果缩略图已成功加载，点击缩略图会打开大图。
-        if ($('#thumbnail')[0].naturalHeight > 0) {
-          $('#thumbnail').hide();
-          $('#big-image').show();
-          return;
-        }
-        // 如果缩略图加载失败，点击缩略图可向服务器申请生成缩略图。
-        ajaxPost(form, '/api/create-thumb', null, function() {
-          if (this.status == 200) {
-            $('#thumbnail').attr('src', urlWithDate(thumbURL(id)));
-          } else {
-            insertErrorAlert(this.response.message);
-          }
-        });
-      });
-
-    $('#big-image')
-      .attr('src', urlWithDate(cacheURL(id)))
-      .click(() => {
-        // 如果大图加载失败，则申请生成大图缓存。
-        if ($('#big-image')[0].naturalHeight <= 0) {
-          ajaxPost(form, '/api/create-thumb', null, function() {
-            if (this.status == 200) {
-              $('#big-image').attr('src', urlWithDate(cacheURL(id)));
-            } else {
-              insertErrorAlert(this.response.message);
-            }
-          });
-          return      
-        }
-        // 如果大图加载成功，点击大图恢复缩略图。
-        $('#big-image').hide();
-        $('#thumbnail').show();
-    });
-  }
   $('#file-size-input').val(fileSizeToString(reco.FileSize));
   $('#file-name-input').val(reco.FileName);
   $('#description-input').val(reco.Message);
   $('#tags-input').val(addPrefix(recoTags, '#'));
   recoLinks.forEach(link => addLinkToForm(link));
+  
+  $('#link-input-btn').click(event => {
+    event.preventDefault();
+    let link = $('#link-input').val().trim();
+    if (link.length == 0) {
+      return;
+    }
+    recoLinks.push(link);
+    addLinkToForm(link);
+    $('#link-input').val('').focus();
+  });
 }
 
+// 初始化 bootstrap 的 tooltip 效果
+$(function () {
+  $('[data-toggle="tooltip"]').tooltip()
+})
+
+// toggle-edit 开关
+$('#toggle-edit').change(function() {
+  if ($('#toggle-edit').prop('checked')) {
+    $('#file-form').show();
+    $('#advanced-buttons').show();
+  } else {
+    $('#file-form').hide();
+    $('#advanced-buttons').hide();
+    $('#delete-confirm').hide();
+  }
+});
+
+// 自动在标签前加井号
+$('#tags-input').blur(() => {
+  recoTags = getNewTags();
+  $('#tags-input').val(addPrefix(recoTags, '#'));
+});
+
+// 利用 template 插入标签
 function insertTag(tag) {
   let badge = $('#tag-tmpl').contents().clone();
   badge
@@ -342,40 +439,17 @@ function insertTag(tag) {
     .insertBefore('#tag-tmpl');
 }
 
+// 利用 template 插入链接（只读）
 function insertLink(link) {
   let li = $('#link-tmpl').contents().clone();
   li.find('.LinkAddress').attr('href', link).text(link);
   li.insertBefore('#link-tmpl');
 }
 
-$('#toggle-edit').change(function() {
-  if ($('#toggle-edit').prop('checked')) {
-    $('#file-form').show();
-    $('#delete-file').show();
-  } else {
-    $('#file-form').hide();
-    $('#delete-file').hide();
-    $('#delete-confirm').hide();
-  }
-});
-
-$('#link-input-btn').click(event => {
-  event.preventDefault();
-
-  let link = $('#link-input').val().trim();
-  if (link.length == 0) {
-    return;
-  }
-  recoLinks.push(link);
-  addLinkToForm(link);
-  $('#link-input').val('').focus();
-});
-
+// 利用 template 插入链接（表单）
 function addLinkToForm(link) {
   let item = $('#link-input-tmpl').contents().clone();
-  item.find('.LinkAddress')
-      .attr('href', link)
-      .text(link);
+  item.find('.LinkAddress').text(link);
   item.find('.DeleteButton').click(e => {
     let i = recoLinks.indexOf(link);
     recoLinks.splice(i, 1);
@@ -384,24 +458,27 @@ function addLinkToForm(link) {
   item.insertAfter('#link-input-tmpl');
 }
 
+// 删除按钮
 $('#delete-file-btn').click(event => {
   event.preventDefault();
-  $('#delete-file').hide();
+  $('#advanced-buttons').hide();
   $('#delete-confirm').show();
 });
 
-$('#delete-no-btn').click(event => {
+// 取消删除
+$('#delete-no-btn').click(() => {
   $('#delete-confirm').hide();
-  $('#delete-file').show();
+  $('#advanced-buttons').show();
 });
 
-$('#delete-yes-btn').click(event => {
+// 执行删除（扔进垃圾桶）
+// 如果是普通情况可以使用 ajaxPost 函数，但这里要处理的情况比较复杂，
+// 因此需要显式使用 XMLHttpRequest.
+$('#delete-yes-btn').click(() => {
   $('#delete-yes-btn').prop('disabled', true);
   $('#delete-no-btn').prop('disabled', true);
-  $('#upload-btn').prop('disabled', true);
+  $('#update-btn').prop('disabled', true);
 
-  let form = new FormData();
-  form.append('id', id);
   let xhr = new XMLHttpRequest();
   xhr.responseType = 'json';
   xhr.open('POST', "/api/delete-reco");
@@ -411,9 +488,7 @@ $('#delete-yes-btn').click(event => {
   };
   xhr.onload = function() {
     if (this.status == 200) {
-      $('#section-view').hide();
-      $('#section-toggle').hide();
-      $('#file-form').hide();
+      hideAllSections();
       insertSuccessAlert('This file has been move to recycle bin.');
     } else {
       insertErrorAlert(this.response.message);
@@ -422,20 +497,23 @@ $('#delete-yes-btn').click(event => {
   xhr.addEventListener('loadend', function() {
     $('#delete-yes-btn').prop('disabled', false);
     $('#delete-no-btn').prop('disabled', false);
-    $('#upload-btn').prop('disabled', false);
+    $('#update-btn').prop('disabled', false);
   });
-  xhr.send(form);
+  xhr.send(id_form);
 });
 
+// 替换文件
 $('#file-input').change(event => {
   let file = event.target.files[0];
 
-  // Chrome 取消选择文件会使 file 变 null, Firefox 无此问题.
   if (!file) {
+    // Chrome 取消选择文件会使 file 变 null, Firefox 则不会。
+    // 因此这里需要处理一下避免 file 变 null 引起的问题。
     $('#new-thumb').hide();
     $('#file-size-input').val(oldFile.size);
     $('#file-name-input').val(oldFile.name);
   } else {
+    // 如果选择了文件，则更新缩略图、校验和、文件大小以及文件名。
     tryToDrawThumb(file);
     sha256Hex(file).then(hashHex => currentChecksum = hashHex);
     $('#file-size-input').val(fileSizeToString(file.size));
@@ -443,6 +521,7 @@ $('#file-input').change(event => {
   }
 });
 
+// 文件未必是图片，因此尝试生成缩略图，如果出错则说明这不是图片。
 async function tryToDrawThumb(file) {
   try {
     let src = await readFilePromise(file);
@@ -454,24 +533,22 @@ async function tryToDrawThumb(file) {
   }
 }
 
+// 提交表单
 $('#update-btn').click(event => {
   event.preventDefault();
-  updateFile($('#update-btn'));
+  updateFile();
 });
 
-function updateFile(btn) {
-  let file = null, fileSize = oldFile.size;
+function updateFile() {
+  let file = null, fileSize = 0;
   let files = document.querySelector('#file-input').files;
 
-  // 如果选择了文件，并且所选的是新文件。
+  // 如果选择了文件，并且所选的是新文件，则向服务器提交新文件。
+  // 如果所选的文件与旧文件一模一样，则 file 维持空值。
+  // 服务器会根据 file 是否为空来判断是否需要替换文件。
   if (files.length > 0 && currentChecksum != oldFile.checksum) {
     file = files[0];
     fileSize = file.size;
-  }
-
-  // 如果所选的文件与旧文件一模一样。
-  if (currentChecksum == oldFile.checksum) {
-    currentChecksum = '';
   }
 
   let form = new FormData();

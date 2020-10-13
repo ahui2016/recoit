@@ -206,7 +206,8 @@ func tempFileURL(name string) string {
 	return "/temp/" + addRecoExt(name)
 }
 
-func checkIDempty(w http.ResponseWriter, id string) bool {
+// checkIDEmpty checks if the ID is empty or not.
+func checkIDEmpty(w http.ResponseWriter, id string) bool {
 	if id == "" {
 		jsonMessage(w, "id is empty", 400)
 		return true
