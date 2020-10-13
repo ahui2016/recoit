@@ -158,8 +158,8 @@ func writeCacheFile(file *Reco, fileContents []byte) error {
 	filePath := cacheFilePath(file.ID)
 	thumbPath := cacheThumbPath(file.ID)
 
-	// 当且只当是图片但不是 gif 时，才压缩图片尺寸。
-	if file.IsImage() && file.IsNotGIF() {
+	// 当且只当是图片但不是 gif, 并且图片体积大于极限时，才压缩图片尺寸。
+	if file.FileSize > graphics.SizeLimit && file.IsImage() && file.IsNotGIF() {
 		buf, err := graphics.ResizeLimit(fileContents)
 		if err != nil {
 			return err
@@ -175,7 +175,7 @@ func writeCacheFile(file *Reco, fileContents []byte) error {
 		}
 	}
 
-	// 如果时图片则一律生成缩略图
+	// 如果是图片则一律生成缩略图
 	if file.IsImage() {
 		err := util.BytesToThumb(fileContents, thumbPath)
 		if err != nil {

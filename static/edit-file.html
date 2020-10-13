@@ -292,7 +292,7 @@ function setFormData(reco) {
       });
 
     $('#big-image')
-      .attr('src', cacheURL(reco.ID))
+      .attr('src', urlWithDate(cacheURL(reco.ID)))
       .click(() => {
         // 如果大图加载失败，则申请生成大图缓存。
         if ($('#big-image')[0].naturalHeight <= 0) {

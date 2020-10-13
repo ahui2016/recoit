@@ -13,28 +13,36 @@ import (
 const (
 	thumbSize = 128
 	quality   = 85
-	longLimit = 1000
+	longLimit = 900
+	SizeLimit = 500 * 1024 // 500KB
 )
 
 // ResizeLimit resizes the image if it's long side bigger than limit.
 func ResizeLimit(img []byte) (*bytes.Buffer, error) {
 	src, err := ReadImage(img)
+	if err != nil {
+		return nil, err
+	}
 	w, h := limitWidthHeight(src.Bounds())
-	small := imaging.Resize(src, w, h, imaging.NearestNeighbor)
-
-	buf := new(bytes.Buffer)
-	err = jpeg.Encode(buf, small, &jpeg.Options{Quality: quality})
-	return buf, err
+	small := imaging.Resize(src, w, h, imaging.Lanczos)
+	return jpegEncode(small)
 }
 
 // Thumbnail create a thumbnail of imgFile.
 func Thumbnail(img []byte) (*bytes.Buffer, error) {
 	src, err := ReadImage(img)
+	if err != nil {
+		return nil, err
+	}
 	side := shortSide(src.Bounds())
 	src = imaging.CropCenter(src, side, side)
-	src = imaging.Resize(src, thumbSize, 0, imaging.NearestNeighbor)
+	src = imaging.Resize(src, thumbSize, 0, imaging.Lanczos)
+	return jpegEncode(src)
+}
+
+func jpegEncode(src image.Image) (*bytes.Buffer, error) {
 	buf := new(bytes.Buffer)
-	err = jpeg.Encode(buf, src, &jpeg.Options{Quality: quality})
+	err := jpeg.Encode(buf, src, &jpeg.Options{Quality: quality})
 	return buf, err
 }
 
@@ -73,4 +81,5 @@ func limitWidthHeight(bounds image.Rectangle) (limitWidth, limitHeight int) {
 	}
 	limitWidth = int(math.Round(w))
 	limitHeight = int(math.Round(h))
+	return
 }
