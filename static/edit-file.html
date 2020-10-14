@@ -112,10 +112,10 @@
         </div>
 
         <!-- 文件名 -->
-        <p id="file-name" class="mb-0 text-break" style="font-weight: bold;"></p>
+        <h5 id="file-name" class="mb-0 text-break"></h5>
 
         <!-- 关于文件的详细描述 -->
-        <p id="description"></p>
+        <p id="description" class="text-secondary text-break"></p>
 
         <!-- 相关链接 -->
         <ul id="links" class="list-group list-group-flush small">
@@ -128,35 +128,38 @@
         </ul>
       </div>
 
-      <!-- 编辑按钮，点击该按钮可切换编辑状态 -->
-      <div id="section-toggle" class="custom-control custom-switch">
+      <!-- 高级按钮：编辑开关、标签分页、纸箱分页、删除按钮。 -->
+      <div id="advanced-buttons" class="custom-control custom-switch" style="margin-bottom: 50px;">
+
+        <!-- 编辑按钮，点击该按钮可切换编辑状态 -->
         <input type="checkbox" id="toggle-edit" class="custom-control-input">
-        <label class="custom-control-label" for="toggle-edit">
-          Toggle Edit Mode
-        </label>
+        <label class="custom-control-label" for="toggle-edit">Edit</label> . 
 
-        <!-- 高级按钮，就是一些不知道放在哪里好的按钮 -->
-        <span id="advanced-buttons" style="display: none;"> . 
+        <!-- 点击这里打开编辑标签的页面 -->
+        <a id="edit-tags" href="#" target="_blank" style="color: blue;">Tags</a>
+        <small>
+          <sup><img src="/public/icons/box-arrow-up-right.svg" alt="↗"></sup>
+        </small> .
 
-          <!-- 点击这里打开编辑 Boxes(纸箱) 的页面 -->
-          <a id="edit-boxes" href="#" target="_blank" style="color: blue;">Boxes</a>
-          <small>
-            <sup><img src="/public/icons/box-arrow-up-right.svg" alt="↗"></sup>
-          </small> .
+        <!-- 点击这里打开编辑 Box(纸箱) 的页面 -->
+        <a id="edit-box" href="#" target="_blank" style="color: blue;">Box</a>
+        <small>
+          <sup><img src="/public/icons/box-arrow-up-right.svg" alt="↗"></sup>
+        </small> .
 
-          <!-- 删除按钮，把该文件扔进垃圾桶 -->
-          <a id="delete-file-btn" href="#" style="color: red;">delete</a>
-        </span>
+        <!-- 删除按钮，把该文件扔进垃圾桶 -->
+        <a id="delete-file-btn" href="#" style="color: red;">delete</a>
 
-        <!-- 进一步确认是否删除 -->
-        <span id="delete-confirm" style="display: none;"> | 
-          <span style="color: red;">move to recycle bin?</span>
-          <button id="delete-yes-btn">Yes</button> <button id="delete-no-btn">No</button>
-        </span>
+      </div>
+
+      <!-- 进一步确认是否删除 -->
+      <div id="delete-confirm" style="display: none; margin-bottom: 50px;">
+        <span style="color: red;">move to recycle bin?</span>
+        <button id="delete-yes-btn">Yes</button> <button id="delete-no-btn">No</button>
       </div>
 
       <!-- 编辑文件内容的表单 -->
-      <form id="file-form" autocomplete="off" style="margin: 50px 0 50px 0; display: none;">
+      <form id="file-form" autocomplete="off" style="margin-bottom: 50px; display: none;">
 
         <!-- 替换文件 -->
         <div class="form-group row">
@@ -282,8 +285,7 @@ function initData() {
 
       // 如果该记录已被扔进垃圾桶，则不显示。
       if (reco.DeletedAt != "") {
-        $('#section-view').hide();
-        $('#section-toggle').hide();
+        hideAllSections();
         insertSuccessAlert('This file has been move to recycle bin.');
         return
       }
@@ -306,8 +308,7 @@ function initData() {
     } else {
 
       // 获取数据失败，显示出错消息。
-      $('#section-view').hide();
-      $('#section-toggle').hide();
+      hideAllSections();
       insertErrorAlert(this.response.message);
     }
   });
@@ -385,6 +386,9 @@ function setReadonlyData(reco) {
       }
     });
   });
+
+  // 编辑 Box(纸箱)
+  $('#edit-box').attr('href', `/edit-reco-box?id=${id}`);
 }
 
 // 初始化表单内容
@@ -416,16 +420,16 @@ $(function () {
 $('#toggle-edit').change(function() {
   if ($('#toggle-edit').prop('checked')) {
     $('#file-form').show();
-    $('#advanced-buttons').show();
   } else {
     $('#file-form').hide();
-    $('#advanced-buttons').hide();
-    $('#delete-confirm').hide();
   }
 });
 
 // 自动在标签前加井号，同时更新全局变量。
-recoTags = getNewTagsAndAddPrefix();
+$('#tags-input').blur(() => {
+    recoTags = getNewTags();
+    $('#tags-input').val(addPrefix(recoTags, '#'));
+});
 
 // 利用 template 插入标签
 function insertTag(tag) {
@@ -559,7 +563,8 @@ function updateFile() {
 
 function hideAllSections() {
   $('#section-view').hide();
-  $('#section-toggle').hide();
+  $('#advanced-buttons').hide();
+  $('#confirm-delete').hide();
   $('#file-form').hide();
 }
     </script>

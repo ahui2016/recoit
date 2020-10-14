@@ -27,7 +27,7 @@ const (
 type Reco struct {
 	ID          string // primary key
 	Type        RecoType
-	Boxes       []string // a file can be in different boxes. []Box.ID
+	Box         string // Box.ID
 	Message     string
 	Links       []string
 	Tags        []string // []Tag.Name
@@ -89,16 +89,15 @@ func (reco *Reco) IsNotGIF() bool {
 	return reco.FileType != "image/gif"
 }
 
-// EqualContent .
+// EqualContent 判断两个 reco 的内容是否大致相同，要注意，
+// 这里不判断 Box 和 Tags，因为这两项通常单独更新。
 func (reco *Reco) EqualContent(other *Reco) bool {
 	if reco.ID != other.ID {
 		return false
 	}
-	if util.SameSlice(reco.Boxes, other.Boxes) &&
+	if util.SameSlice(reco.Links, other.Links) &&
 		reco.Type == other.Type &&
 		reco.Message == other.Message &&
-		util.SameSlice(reco.Links, other.Links) &&
-		util.SameSlice(reco.Tags, other.Tags) &&
 		reco.FileName == other.FileName &&
 		reco.FileSize == other.FileSize &&
 		reco.FileType == other.FileType &&
@@ -108,11 +107,13 @@ func (reco *Reco) EqualContent(other *Reco) bool {
 	return false
 }
 
+// Tag .
 type Tag struct {
 	Name    string `storm:"id"`
 	RecoIDs []string
 }
 
+// NewTag .
 func NewTag(name, id string) *Tag {
 	return &Tag{
 		name,
@@ -120,6 +121,7 @@ func NewTag(name, id string) *Tag {
 	}
 }
 
+// Add .
 func (tag *Tag) Add(id string) {
 	if util.HasString(tag.RecoIDs, id) {
 		return
@@ -127,6 +129,7 @@ func (tag *Tag) Add(id string) {
 	tag.RecoIDs = append(tag.RecoIDs, id)
 }
 
+// Remove .
 func (tag *Tag) Remove(id string) {
 	i := util.StringIndex(tag.RecoIDs, id)
 	if i < 0 {

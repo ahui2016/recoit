@@ -53,6 +53,8 @@ func main() {
 	http.HandleFunc("/api/create-thumb", checkLogin(createThumbHandler))
 	http.HandleFunc("/api/download-file", checkLogin(downloadFile))
 
+	http.HandleFunc("/edit-reco-box", checkLogin(editRecoBoxPage))
+
 	http.HandleFunc("/setup-cloud/ibm", setupIbmCosPage)
 	http.HandleFunc("/api/setup-ibm-cos", setupIbmCosHandler)
 	http.HandleFunc("/api/check-cloud-settings", checkCloudSettings)
@@ -96,6 +98,10 @@ func addFilePage(w http.ResponseWriter, r *http.Request) {
 
 func editFilePage(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, htmlFiles["edit-file"])
+}
+
+func editRecoBoxPage(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprint(w, htmlFiles["edit-reco-box"])
 }
 
 func tagPage(w http.ResponseWriter, r *http.Request) {
