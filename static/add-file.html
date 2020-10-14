@@ -113,7 +113,7 @@ $('#file-input').change(event => {
   } else {
     $('#hidden-fields').show();
 
-    tryToDrawThumb(file);
+    tryToDrawThumb(file, '#thumbnail');
     sha256Hex(file).then(hashHex => fileSha256 = hashHex);
 
     $('#file-size').val(fileSizeToString(file.size));
@@ -127,17 +127,6 @@ $('#tags-input').blur(() => {
   newTags = getNewTags();
   $('#tags-input').val(addPrefix(newTags, '#'));
 });
-
-async function tryToDrawThumb(file) {
-  try {
-    let src = await readFilePromise(file);
-    await drawThumb(src, file, '#thumbnail canvas');
-    $('#thumbnail').show();
-  } catch (e) {
-    console.log(e);
-    $('#thumbnail').hide();
-  }
-}
 
 function checkHashUpload(event) {
   event.preventDefault();

@@ -103,6 +103,7 @@ function fileSizeToString(fileSize) {
   return `${sizeMB.toFixed(2)} MB`;
 }
 
+// 把标签文本框内的字符串转化为数组。
 function getNewTags() {
   let trimmed = $('#tags-input').val().replace(/#|,|，/g, ' ').trim();
   if (trimmed.length == 0) {
@@ -111,6 +112,7 @@ function getNewTags() {
   return trimmed.split(/ +/);
 }
 
+// 把标签数组转化为字符串。
 function addPrefix(arr, prefix) {
   if (arr == null) {
     return '';
@@ -118,6 +120,7 @@ function addPrefix(arr, prefix) {
   return arr.map(x => prefix + x).join(' ');
 }
 
+// 检查服务器中有无文件冲突（内容完全一样的文件）。
 function checkHashHex(hashHex) {
   let form = new FormData();
   form.append('hashHex', hashHex);
@@ -139,14 +142,17 @@ async function sha256Hex(file) {
   return hashHex;
 }
 
+// 日期：月和日
 function monthAndDay(simpledatetime) {
   return simpledatetime.split(' ').slice(0, 2).join(' ');
 }
 
+// 日期：年月日和时间
 function simpleDateTime(date) {
   return date.toString().split(' ').slice(1, 5).join(' ');
 }
 
+// 日期：年月日
 function simpleDate(date) {
   let year = '' + date.getFullYear(),
       month = '' + (date.getMonth() + 1),
@@ -156,18 +162,22 @@ function simpleDate(date) {
   return [year, month, day].join('-');
 }
 
+// 缩略图的url
 function thumbURL(id) {
   return '/thumb/' + id + '.small';
 }
 
+// 缓存文件的url
 function cacheURL(id) {
   return '/cache/' + id + '.reco';
 }
 
+// 临时文件的url
 function tempURL(id) {
   return '/temp/' + id + '.reco';
 }
 
+// 带时间的url, 用于刷新文件。
 function urlWithDate(originURL) {
   let d = new Date();
   return originURL + '?' + d.getTime();
@@ -185,7 +195,21 @@ function readFilePromise(file) {
   });
 }
 
-function drawThumb(src, file, canvasName) {
+// 文件未必是图片，因此尝试生成缩略图，如果出错则说明这不是图片。
+async function tryToDrawThumb(file, thumbName) {
+  let canvasName = thumbName + ' canvas'
+  try {
+    let src = await readFilePromise(file);
+    await drawThumb(src, canvasName);
+    $(thumbName).show();
+  } catch (e) {
+    console.log(e);
+    $(thumbName).hide();
+  }
+}
+
+// 生成缩略图并描绘到一个 canvas 里。
+function drawThumb(src, canvasName) {
   return new Promise((resolve, reject) => {
     let img = new Image();
     img.src = src;
@@ -215,6 +239,7 @@ function drawThumb(src, file, canvasName) {
   });
 }
 
+// 获取地址栏的参数。
 function getUrlParam(param) {
   let loc = new URL(document.location);
   return loc.searchParams.get(param);

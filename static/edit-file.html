@@ -514,24 +514,12 @@ $('#file-input').change(event => {
     $('#file-name-input').val(oldFile.name);
   } else {
     // 如果选择了文件，则更新缩略图、校验和、文件大小以及文件名。
-    tryToDrawThumb(file);
+    tryToDrawThumb(file, '#new-thumb');
     sha256Hex(file).then(hashHex => currentChecksum = hashHex);
     $('#file-size-input').val(fileSizeToString(file.size));
     $('#file-name-input').val(file.name);
   }
 });
-
-// 文件未必是图片，因此尝试生成缩略图，如果出错则说明这不是图片。
-async function tryToDrawThumb(file) {
-  try {
-    let src = await readFilePromise(file);
-    await drawThumb(src, file, '#new-thumb canvas');
-    $('#new-thumb').show();
-  } catch (e) {
-    console.log(e);
-    $('#new-thumb').hide();
-  }
-}
 
 // 提交表单
 $('#update-btn').click(event => {
