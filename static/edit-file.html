@@ -424,11 +424,8 @@ $('#toggle-edit').change(function() {
   }
 });
 
-// 自动在标签前加井号
-$('#tags-input').blur(() => {
-  recoTags = getNewTags();
-  $('#tags-input').val(addPrefix(recoTags, '#'));
-});
+// 自动在标签前加井号，同时更新全局变量。
+recoTags = getNewTagsAndAddPrefix();
 
 // 利用 template 插入标签
 function insertTag(tag) {

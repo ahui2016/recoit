@@ -103,6 +103,15 @@ function fileSizeToString(fileSize) {
   return `${sizeMB.toFixed(2)} MB`;
 }
 
+// 自动在标签文本框的标签前加井号，并返回标签数组
+function getNewTagsAndAddPrefix() {
+  $('#tags-input').blur(() => {
+    let tags = getNewTags();
+    $('#tags-input').val(addPrefix(tags, '#'));
+  });
+  return tags;
+}
+
 // 把标签文本框内的字符串转化为数组。
 function getNewTags() {
   let trimmed = $('#tags-input').val().replace(/#|,|，/g, ' ').trim();

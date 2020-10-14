@@ -122,22 +122,19 @@ $('#file-input').change(event => {
   $('.alert-dismissible').alert('close');
 });
 
-// 自动在标签前加井号
-$('#tags-input').blur(() => {
-  newTags = getNewTags();
-  $('#tags-input').val(addPrefix(newTags, '#'));
-});
+// 自动在标签前加井号，同时更新全局变量。
+newTags = getNewTagsAndAddPrefix();
 
+// 检查文件的校验和，如无冲突则上传文件。
 function checkHashUpload(event) {
   event.preventDefault();
 
   let form = new FormData();
   form.append('hashHex', fileSha256);
 
-  let btn = $('#upload-btn');
-  ajaxPost(form, '/api/checksum', btn, function() {
+  ajaxPost(form, '/api/checksum', $('#upload-btn'), function() {
     if (this.status == 200) {
-      uploadFile(btn);
+      uploadFile();
     } else {
       let errMsg = "Error: Upload Failed. " + this.response.message;
       insertErrorAlert(errMsg);
@@ -146,7 +143,8 @@ function checkHashUpload(event) {
   });
 }
 
-function uploadFile(btn) {
+// 上传文件
+function uploadFile() {
   let form = new FormData();
   let file = document.querySelector('#file-input').files[0];
   form.append('file', file);
@@ -167,6 +165,7 @@ function uploadFile(btn) {
   });
 }
 
+// 显示成功消息
 function showSuccessAlert(msg) {
   $('#success-message').show();
   $('#success-message').find('a').attr('href', msg);
