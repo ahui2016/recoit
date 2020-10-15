@@ -38,26 +38,6 @@
           </div>
       </nav>
 
-      <!--成功提示-->
-      <template id="alert-success-tmpl">
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            <span class="AlertMessage"></span>
-            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-              <span aria-hidden="true">&times;</span>
-            </button>
-        </div>
-      </template>
-
-      <!--出错提示-->
-      <template id="alert-danger-tmpl">
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            <span class="AlertMessage"></span>
-            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-              <span aria-hidden="true">&times;</span>
-            </button>
-        </div>
-      </template>
-
       <!-- 只读区域，展示该文件的文件名、缩略图、标签等 -->
       <div id="section-view" style="margin: 50px 0 50px 0;">
 
@@ -98,16 +78,60 @@
         </ul>
       </div>
 
+      <!--成功提示-->
+      <template id="alert-success-tmpl">
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <span class="AlertMessage"></span>
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+      </template>
+
+      <!--出错提示-->
+      <template id="alert-danger-tmpl">
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <span class="AlertMessage"></span>
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+      </template>
+
+      <!-- 表单 -->
+      <form id="file-form" autocomplete="off" style="margin-bottom: 50px;">
+
+        <!-- 纸箱名称输入框 -->
+        <div class="form-group row">
+          <div class="input-group">
+            <div class="input-group-prepend">
+              <img class="input-group-text" src="/public/icons/box.svg" alt="box icon"
+                  title="纸箱名称" data-toggle="tooltip">
+            </div>
+            <input type="text" id="title-input" class="form-control" autofocus>
+            <div class="input-group-append">
+              <button id="submit-btn" class="btn btn-outline-primary">OK</button>
+              <button id="submit-spinner" class="btn btn-primary" style="display: none;" type="button" disabled>
+                <span class="spinner-border spinner-border-sm" role="status"></span>
+              </button>      
+            </div>
+          </div>
+        </div>
+
+        <input type="submit" disabled hidden /><!-- 防止回车提交表单 -->
+
+      </form>
+
     </div>
 
     <script>
     // 如果有些函数在这里找不到，那就是在 util.js 里。
 
 // 初始化一些全局变量
-let recoTags = [], recoLinks = [];
 let id = getUrlParam('id');
 let id_form = new FormData();
 id_form.append('id', id);
+let recoTags = [], recoLinks = [], box_id = null, currentTitle = '';
 
 // 初始化页面内容，在该函数内主要初始化需要从服务器获取数据的内容。
 initData();
@@ -126,6 +150,9 @@ function initData() {
         insertSuccessAlert('This file has been move to recycle bin.');
         return
       }
+
+      // 初始化一些全局变量
+      if (reco.Box) box_id = reco.Box;
       if (reco.Tags) recoTags = Array.from(reco.Tags);
       if (reco.Links) recoLinks = Array.from(reco.Links);
 
@@ -162,6 +189,7 @@ function setReadonlyData(reco) {
 
 // 初始化表单内容
 function setFormData(reco) {
+  $('#title-input').val(reco.Box);
 }
 
 // 初始化 bootstrap 的 tooltip 效果
@@ -185,13 +213,26 @@ function insertLink(link) {
 }
 
 // 提交表单
-$('#update-btn').click(event => {
+$('#submit-btn').click(event => {
   event.preventDefault();
-  updateFile();
-});
 
-function updateFile() {
-}
+  currentTitle = $('#title-input').val().trim();
+  if (currentTitle.length == 0) {
+    insertErrorAlert('Error: 纸箱名称不可为空。');
+    return;
+  }
+  id_form.append('title', currentTitle);
+  
+  ajaxPostWithSpinner(id_form, '/api/update-reco-box', 'submit', function() {
+    if (this.status == 200) {
+      insertSuccessAlert(`OK. The box is set to: ${currentTitle}.`);
+      hideAllSections();
+    } else {
+      let errMsg = "Error: " + this.response.message;
+      insertErrorAlert(errMsg);
+    }
+  });
+});
 
 function hideAllSections() {
   $('#section-view').hide();

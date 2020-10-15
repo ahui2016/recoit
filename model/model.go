@@ -45,13 +45,12 @@ type Reco struct {
 // NewReco .
 func NewReco(recoType RecoType) *Reco {
 	now := util.TimeNow()
-	reco := &Reco{
+	return &Reco{
 		ID:        util.NewID(),
+		Type:      recoType,
 		CreatedAt: now,
 		UpdatedAt: now,
 	}
-	reco.Type = recoType
-	return reco
 }
 
 // NewFirstReco .
@@ -146,4 +145,24 @@ type Box struct {
 	RecoIDs   []string // []Reco.ID // 允许用户排序(顶置)
 	CreatedAt string   `storm:"index"` // ISO8601
 	UpdatedAt string   `storm:"index"`
+}
+
+// NewBox .
+func NewBox(title string) *Box {
+	now := util.TimeNow()
+	return &Box{
+		ID:        util.NewID(),
+		Title:     title,
+		CreatedAt: now,
+		UpdatedAt: now,
+	}
+}
+
+// Add .
+func (box *Box) Add(recoID string) {
+	if util.HasString(box.RecoIDs, recoID) {
+		return
+	}
+	box.RecoIDs = append(box.RecoIDs, recoID)
+	box.UpdatedAt = util.TimeNow()
 }

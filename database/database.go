@@ -355,8 +355,7 @@ func (db *DB) UpdateReco(oldReco, reco *Reco, objName string, objBody []byte) er
 		}
 	}
 
-	tx.Commit()
-	return nil
+	return tx.Commit()
 }
 
 func addTags(tx storm.Node, tags []string, recoID string) error {
@@ -399,4 +398,64 @@ func (db *DB) GetTagByName(name string) (*Tag, error) {
 	tag := new(Tag)
 	err := db.DB.One("Name", name, tag)
 	return tag, err
+}
+
+// GetBoxByID .
+func (db *DB) GetBoxByID(id string) (*Box, error) {
+	box := new(Box)
+	err := db.DB.One("ID", id, box)
+	return box, err
+}
+
+// getBoxByTitle .
+func (db *DB) getBoxByTitle(title string) (*Box, error) {
+	box := new(Box)
+	err := db.DB.One("Title", title, box)
+	return box, err
+}
+
+/*
+// GetBoxTitleByRecoID .
+func (db *DB) GetBoxTitleByRecoID(id string) (string, error) {
+	reco, err := db.GetRecoByID(id)
+	if err != nil {
+		return "", err
+	}
+	box, err := db.GetBoxByID(reco.Box)
+	if err != nil {
+		return "", err
+	}
+	return box.Title, nil
+}
+*/
+
+// UpdateRecoBox 更新 reco 里的 Box, 该 box 可能原已存在，也可能在此时才新建。
+func (db *DB) UpdateRecoBox(boxTitle, recoID string) error {
+	box, err := db.getBoxByTitle(boxTitle)
+	if err != nil && err != storm.ErrNotFound {
+		return err
+	}
+
+	// 如果不存在该 box, 就新增一个。
+	if err == storm.ErrNotFound {
+		box = model.NewBox(boxTitle)
+	}
+
+	// 到这里，box 必然存在，因此可向其添加 recoID.
+	box.Add(recoID)
+
+	tx, err := db.DB.Begin(true)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	if err := tx.Save(box); err != nil {
+		return err
+	}
+	if err := tx.UpdateField(Reco{ID: recoID}, "Box", box.ID); err != nil {
+		return err
+	}
+
+	return tx.Commit()
 }

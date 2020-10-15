@@ -216,7 +216,7 @@
         <!-- 链接/网址输入框 -->
         <div class="form-group row">
           <label for="link-input" class="col-sm-2 col-form-label">Links</label>
-          <div id="link-input-group" class="input-group col-sm-10">
+          <div class="input-group col-sm-10">
             <input type="text" id="link-input" class="form-control" placeholder="https://">
             <div class="input-group-append">
               <button id="link-input-btn" class="btn btn-outline-primary">add</button>
@@ -296,6 +296,8 @@ function initData() {
         name: reco.FileName,
         checksum: reco.Checksum,
       };
+
+      // 初始化一些全局变量
       if (reco.Tags) recoTags = Array.from(reco.Tags);
       if (reco.Links) recoLinks = Array.from(reco.Links);
 

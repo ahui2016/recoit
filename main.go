@@ -54,6 +54,7 @@ func main() {
 	http.HandleFunc("/api/download-file", checkLogin(downloadFile))
 
 	http.HandleFunc("/edit-reco-box", checkLogin(editRecoBoxPage))
+	http.HandleFunc("/api/update-reco-box", checkLogin(updateRecoBox))
 
 	http.HandleFunc("/setup-cloud/ibm", setupIbmCosPage)
 	http.HandleFunc("/api/setup-ibm-cos", setupIbmCosHandler)
@@ -446,6 +447,8 @@ func logoutHandler(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/login", http.StatusTemporaryRedirect)
 }
 
+// downloadFile 检查本地缓存有无该 id 的文件，如果没有就从 COS 下载。
+// 最后向前端返回该文件的 url.
 func downloadFile(w http.ResponseWriter, r *http.Request) {
 	id := r.FormValue("id")
 	if checkIDEmpty(w, id) {
@@ -467,4 +470,14 @@ func downloadFile(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	jsonMessage(w, tempFileURL(id), 200)
+}
+
+func updateRecoBox(w http.ResponseWriter, r *http.Request) {
+	recoID := r.FormValue("id")
+	boxTitle := r.FormValue("title")
+	if recoID == "" || boxTitle == "" {
+		jsonMessage(w, "id or box-title is empty", 400)
+		return
+	}
+	checkErr(w, db.UpdateRecoBox(boxTitle, recoID), 500)
 }
