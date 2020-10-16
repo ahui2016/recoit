@@ -12,7 +12,7 @@
 
     <!-- Optional JavaScript -->
     <!-- jQuery first, then Popper.js, then Bootstrap JS -->
-    <script src="/public/jquery-3.5.1.min.js"></script>
+    <script src="../public/jquery-3.5.1.min.js"></script>
     <script src="/public/bootstrap.bundle.min.js"></script>
     <script src="/public/util.js"></script>
 
@@ -24,7 +24,7 @@
     <div class="container" style="max-width: 680px; min-width: 400px;">
 
       <!-- 顶端导航栏 -->
-      <nav class="navbar navbar-light bg-light mt-1">
+      <nav class="navbar navbar-light bg-light mt-1 mb-3">
           <span class="navbar-brand mb-0 h1">Edit Box</span>
           <div class="btn-toolbar" role="toolbar" aria-label="nav bar">
             <div class="btn-group mr-2" role="group">
@@ -99,7 +99,7 @@
       </template>
 
       <!-- 表单 -->
-      <form id="file-form" autocomplete="off" style="margin-bottom: 50px;">
+      <form id="the-form" autocomplete="off" style="margin-bottom: 50px;">
 
         <!-- 纸箱名称输入框 -->
         <div class="form-group row">
@@ -108,7 +108,11 @@
               <img class="input-group-text" src="/public/icons/box.svg" alt="box icon"
                   title="纸箱名称" data-toggle="tooltip">
             </div>
-            <input type="text" id="title-input" class="form-control" autofocus>
+
+            <!-- 由于 bootstrap 会自动让文本框与匹配的按钮关联起来， -->
+            <!-- 因此这里让文本框指向一个不存在的 form, 防止按回车键触发按钮。 -->
+            <input form="not-exist" type="text" id="title-input" class="form-control" autofocus>
+
             <div class="input-group-append">
               <button id="submit-btn" class="btn btn-outline-primary">OK</button>
               <button id="submit-spinner" class="btn btn-primary" style="display: none;" type="button" disabled>
@@ -117,8 +121,6 @@
             </div>
           </div>
         </div>
-
-        <input type="submit" disabled hidden /><!-- 防止回车提交表单 -->
 
       </form>
 
@@ -131,7 +133,8 @@
 let id = getUrlParam('id');
 let id_form = new FormData();
 id_form.append('id', id);
-let recoTags = [], recoLinks = [], box_id = null, currentTitle = '';
+let recoTags = [], recoLinks = [];
+let box_id = null, oldTitle = '', currentTitle = '';
 
 // 初始化页面内容，在该函数内主要初始化需要从服务器获取数据的内容。
 initData();
@@ -189,7 +192,18 @@ function setReadonlyData(reco) {
 
 // 初始化表单内容
 function setFormData(reco) {
-  $('#title-input').val(reco.Box);
+  if (reco.Box) {
+    let form = new FormData();
+    form.append('box-id', reco.Box);
+    ajaxPost(form, '/api/get-box', $('#title-input'), function() {
+      if (this.status == 200) {
+        oldTitle = this.response.Title;
+        $('#title-input').val(oldTitle);
+      } else {
+        insertErrorAlert(this.response.message);
+      }
+    });
+  }
 }
 
 // 初始化 bootstrap 的 tooltip 效果
@@ -221,6 +235,10 @@ $('#submit-btn').click(event => {
     insertErrorAlert('Error: 纸箱名称不可为空。');
     return;
   }
+  if (currentTitle == oldTitle) {
+    insertErrorAlert('纸箱名称没有变化。')
+    return;
+  }
   id_form.append('title', currentTitle);
   
   ajaxPostWithSpinner(id_form, '/api/update-reco-box', 'submit', function() {
@@ -236,7 +254,7 @@ $('#submit-btn').click(event => {
 
 function hideAllSections() {
   $('#section-view').hide();
-  $('#file-form').hide();
+  $('#the-form').hide();
 }
     </script>
   </body>

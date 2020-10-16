@@ -401,9 +401,9 @@ func (db *DB) GetTagByName(name string) (*Tag, error) {
 }
 
 // GetBoxByID .
-func (db *DB) GetBoxByID(id string) (*Box, error) {
+func (db *DB) GetBoxByID(boxID string) (*Box, error) {
 	box := new(Box)
-	err := db.DB.One("ID", id, box)
+	err := db.DB.One("ID", boxID, box)
 	return box, err
 }
 
@@ -430,7 +430,21 @@ func (db *DB) GetBoxTitleByRecoID(id string) (string, error) {
 */
 
 // UpdateRecoBox 更新 reco 里的 Box, 该 box 可能原已存在，也可能在此时才新建。
+// 另外，如果 reco 原本已经属于另一个 box, 还要从那个 box 里剔除该 reco.
 func (db *DB) UpdateRecoBox(boxTitle, recoID string) error {
+	reco, err := db.GetRecoByID(recoID)
+	if err != nil {
+		return err
+	}
+
+	var oldBox *Box
+	if reco.Box != "" {
+		oldBox, err = db.GetBoxByID(reco.Box)
+		if err != nil {
+			return err
+		}
+	}
+
 	box, err := db.getBoxByTitle(boxTitle)
 	if err != nil && err != storm.ErrNotFound {
 		return err
@@ -442,7 +456,10 @@ func (db *DB) UpdateRecoBox(boxTitle, recoID string) error {
 	}
 
 	// 到这里，box 必然存在，因此可向其添加 recoID.
-	box.Add(recoID)
+	// 如果实际上没有添加 (recoID 本来就在该 box 里), 则不需要进一步处理。
+	if !box.Add(recoID) {
+		return nil
+	}
 
 	tx, err := db.DB.Begin(true)
 	if err != nil {
@@ -453,7 +470,15 @@ func (db *DB) UpdateRecoBox(boxTitle, recoID string) error {
 	if err := tx.Save(box); err != nil {
 		return err
 	}
-	if err := tx.UpdateField(Reco{ID: recoID}, "Box", box.ID); err != nil {
+
+	// 尝试从 oldBox 中删除 recoID, 如果实际上没有删除就不用更新。
+	if oldBox.Remove(recoID) {
+		if err := tx.Save(oldBox); err != nil {
+			return err
+		}
+	}
+
+	if err := tx.UpdateField(&Reco{ID: recoID}, "Box", box.ID); err != nil {
 		return err
 	}
 

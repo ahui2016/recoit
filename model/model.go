@@ -158,11 +158,22 @@ func NewBox(title string) *Box {
 	}
 }
 
-// Add .
-func (box *Box) Add(recoID string) {
+// Add 添加 reco-id, 如果实际上没有添加则返回 false.
+func (box *Box) Add(recoID string) bool {
 	if util.HasString(box.RecoIDs, recoID) {
-		return
+		return false
 	}
 	box.RecoIDs = append(box.RecoIDs, recoID)
 	box.UpdatedAt = util.TimeNow()
+	return true
+}
+
+// Remove 删除 reco-id, 如果实际上没有删除则返回 false.
+func (box *Box) Remove(recoID string) bool {
+	i := util.StringIndex(box.RecoIDs, recoID)
+	if i < 0 {
+		return false
+	}
+	box.RecoIDs = util.DeleteFromSlice(box.RecoIDs, i)
+	return true
 }

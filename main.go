@@ -54,6 +54,7 @@ func main() {
 	http.HandleFunc("/api/download-file", checkLogin(downloadFile))
 
 	http.HandleFunc("/edit-reco-box", checkLogin(editRecoBoxPage))
+	http.HandleFunc("/api/get-box", checkLogin(getBoxHandler))
 	http.HandleFunc("/api/update-reco-box", checkLogin(updateRecoBox))
 
 	http.HandleFunc("/setup-cloud/ibm", setupIbmCosPage)
@@ -470,6 +471,15 @@ func downloadFile(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	jsonMessage(w, tempFileURL(id), 200)
+}
+
+func getBoxHandler(w http.ResponseWriter, r *http.Request) {
+	boxID := r.FormValue("box-id")
+	box, err := db.GetBoxByID(boxID)
+	if checkErr(w, err, 500) {
+		return
+	}
+	jsonResponse(w, box, 200)
 }
 
 func updateRecoBox(w http.ResponseWriter, r *http.Request) {
