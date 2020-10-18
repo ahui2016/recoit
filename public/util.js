@@ -244,3 +244,21 @@ function getUrlParam(param) {
   let loc = new URL(document.location);
   return loc.searchParams.get(param);
 }
+
+// 将 arr 里的 box (ID == box_id) 移动到顶部，并保持其他元素的顺序。
+function moveBoxToTop(box_id, arr) {
+  let i = arr.findIndex(box => box.ID == box_id);
+  if (i < 0) return null;
+  if (i = 0) return arr;
+  if (i = 1) {
+    [arr[0], arr[1]] = [arr[1], arr[0]];
+    return arr;
+  }
+
+  // 特殊情况如上。以下是普通情况。
+  let top = arr[i];
+  let head = [top];
+  let tail = arr.splice(i, 1);
+  head.push(...tail);
+  return head;
+}

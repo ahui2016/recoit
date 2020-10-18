@@ -55,6 +55,7 @@ func main() {
 
 	http.HandleFunc("/edit-reco-box", checkLogin(editRecoBoxPage))
 	http.HandleFunc("/api/get-box", checkLogin(getBoxHandler))
+	http.HandleFunc("/api/all-boxes", checkLogin(getAllBoxes))
 	http.HandleFunc("/api/update-reco-box", checkLogin(updateRecoBox))
 
 	http.HandleFunc("/setup-cloud/ibm", setupIbmCosPage)
@@ -306,6 +307,15 @@ func getAllRecos(w http.ResponseWriter, r *http.Request) {
 	jsonResponse(w, all, 200)
 }
 
+func getAllBoxes(w http.ResponseWriter, r *http.Request) {
+	var boxes []Box
+	err := db.DB.AllByIndex("UpdatedAt", &boxes)
+	if checkErr(w, err, 500) {
+		return
+	}
+	jsonResponse(w, boxes, 200)
+}
+
 func deleteRecoHandler(w http.ResponseWriter, r *http.Request) {
 	id := r.FormValue("id")
 	checkErr(w, db.DeleteReco(id), 500)
@@ -489,5 +499,5 @@ func updateRecoBox(w http.ResponseWriter, r *http.Request) {
 		jsonMessage(w, "id or box-title is empty", 400)
 		return
 	}
-	checkErr(w, db.UpdateRecoBox(boxTitle, recoID), 500)
+	checkErr(w, db.UpdateRecoBox(boxID, boxTitle, recoID), 500)
 }

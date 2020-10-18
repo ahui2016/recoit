@@ -431,7 +431,8 @@ func (db *DB) GetBoxTitleByRecoID(id string) (string, error) {
 
 // UpdateRecoBox 更新 reco 里的 Box, 该 box 可能原已存在，也可能在此时才新建。
 // 另外，如果 reco 原本已经属于另一个 box, 还要从那个 box 里剔除该 reco.
-func (db *DB) UpdateRecoBox(boxTitle, recoID string) error {
+// 如果有 boxID 则优先采用 boxID, 如果没有 boxID 则采用 boxTitle.
+func (db *DB) UpdateRecoBox(boxID, boxTitle, recoID string) error {
 	reco, err := db.GetRecoByID(recoID)
 	if err != nil {
 		return err
@@ -445,9 +446,18 @@ func (db *DB) UpdateRecoBox(boxTitle, recoID string) error {
 		}
 	}
 
-	box, err := db.getBoxByTitle(boxTitle)
-	if err != nil && err != storm.ErrNotFound {
-		return err
+	// 如果有 boxID 则优先采用 boxID, 如果没有 boxID 则采用 boxTitle.
+	var box *Box
+	if boxID != "" {
+		box, err = db.GetBoxByID(boxID)
+		if err != nil {
+			return err
+		}
+	} else {
+		box, err = db.getBoxByTitle(boxTitle)
+		if err != nil && err != storm.ErrNotFound {
+			return err
+		}
 	}
 
 	// 如果不存在该 box, 就新增一个。

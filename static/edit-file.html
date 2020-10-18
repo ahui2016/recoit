@@ -235,7 +235,7 @@
                 <img src="/public/icons/x-circle-fill.svg" class="ml-auto DeleteButton" alt="del">
               </li>
             </template>
-          </ul>      
+          </ul>
         </div>
 
         <!--更新时的错误提示-->
@@ -369,8 +369,8 @@ function setReadonlyData(reco) {
   $('#file-size').text(fileSizeToString(reco.FileSize));
   $('#file-name').text(reco.FileName);
   $('#description').text(reco.Message);
-  recoTags.forEach(tag => insertTag(tag));
-  recoLinks.forEach(link => insertLink(link));
+  recoTags.forEach(insertTag);
+  recoLinks.forEach(insertLink);
 
   // 这是下载原图/原文件的按钮。点击该按钮时：
   // A. 如果在服务器里没有缓存，服务器会从 COS 下载回来。

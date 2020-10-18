@@ -102,16 +102,17 @@
       <form id="the-form" autocomplete="off" style="margin-bottom: 50px;">
 
         <!-- 纸箱名称输入框 -->
-        <div class="form-group row">
+        <div class="form-group row" style="padding-left: 1em; padding-right: 1em;">
           <div class="input-group">
-            <div class="input-group-prepend">
+            <div class="input-group-prepend" onclick="$('#title-input').focus()">
               <img class="input-group-text" src="/public/icons/box.svg" alt="box icon"
                   title="纸箱名称" data-toggle="tooltip">
             </div>
 
             <!-- 由于 bootstrap 会自动让文本框与匹配的按钮关联起来， -->
             <!-- 因此这里让文本框指向一个不存在的 form, 防止按回车键触发按钮。 -->
-            <input form="not-exist" type="text" id="title-input" class="form-control" autofocus>
+            <input form="not-exist" autocomplete="off"
+                type="text" id="title-input" class="form-control">
 
             <div class="input-group-append">
               <button id="submit-btn" class="btn btn-outline-primary">OK</button>
@@ -121,6 +122,31 @@
             </div>
           </div>
         </div>
+
+        <!-- 近期纸箱列表 -->
+        <ul class="list-group list-group-flush">
+
+          <!-- 用户可以选择自定义 -->
+          <!-- 当且只当选中此项时，title-input 才有效 -->
+          <li class="list-group-item" id="editable-item">
+            <div class="form-check">
+              <input id="editable-radio" class="form-check-input" 
+                  type="radio" name="box-radio-input" value="editable-radio">
+              <label id="editable-label" class="form-check-label text-info" for="editable-radio">
+                【手动输入】
+              </label>
+            </div>
+          </li>
+
+          <template id="box-item-tmpl">
+            <li class="list-group-item">
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="box-radio-input" id="" value="">
+                <label class="form-check-label" for=""></label>
+              </div>
+            </li>
+          </template>
+        </ul>
 
       </form>
 
@@ -134,7 +160,8 @@ let id = getUrlParam('id');
 let id_form = new FormData();
 id_form.append('id', id);
 let recoTags = [], recoLinks = [];
-let box_id = null, oldTitle = '', currentTitle = '';
+let box_id = null, oldTitle = '';
+let currentBoxID = '', currentBoxTitle = '';
 
 // 初始化页面内容，在该函数内主要初始化需要从服务器获取数据的内容。
 initData();
@@ -186,25 +213,69 @@ function setReadonlyData(reco) {
   $('#file-size').text(fileSizeToString(reco.FileSize));
   $('#file-name').text(reco.FileName);
   $('#description').text(reco.Message);
-  recoTags.forEach(tag => insertTag(tag));
-  recoLinks.forEach(link => insertLink(link));
+  recoTags.forEach(insertTag);
+  recoLinks.forEach(insertLink);
 }
 
 // 初始化表单内容
 function setFormData(reco) {
-  if (reco.Box) {
-    let form = new FormData();
-    form.append('box-id', reco.Box);
-    ajaxPost(form, '/api/get-box', $('#title-input'), function() {
-      if (this.status == 200) {
-        oldTitle = this.response.Title;
-        $('#title-input').val(oldTitle);
+
+  // 获取全部纸箱。
+  ajaxGet('/api/all-boxes', null, function(){
+    if (this.status == 200) {
+      let boxes = this.response;
+
+      // 如果原本没有纸箱，则选中 “自定义纸箱”。
+      if (!reco.Box) {
+        $('#editable-radio').prop('checked', true);
+        $('#title-input').focus();
+        insertBoxes(boxes, null);
       } else {
-        insertErrorAlert(this.response.message);
+        // 如果原本已经有纸箱，则将原本的纸箱移到列表顶部。
+        boxes = moveBoxToTop(reco.Box, boxes);
+        $('#title-input').val(boxes[0].Title).prop('disabled', true);
+        insertBoxes(boxes, reco.Box);
       }
-    });
-  }
+    } else {
+      insertErrorAlert(this.response.message);
+    }
+  });
 }
+
+// 插入 box 到列表中，并选中 box_id_checked 的条目。
+function insertBoxes(boxes, box_id_checked) {
+  boxes.forEach(box => {
+    let boxElem = $('#box-item-tmpl').contents().clone();
+    boxElem.insertBefore('#box-item-tmpl');
+
+    // box 的单选框
+    let boxInput = boxElem.find('input');
+    if (box.ID == box_id_checked) {
+      boxInput.prop('checked', true);
+      currentBoxID = box.ID;
+    }
+    boxInput
+      .attr('id', box.ID)
+      .attr('value', box.ID)
+      .click(() => {
+        boxInput.prop('checked', true);
+        currentBoxID = box.ID;
+        $('#title-input').val(box.Title).prop('disabled', true);
+      });
+    
+    // box 的单选框的描述
+    let boxLabel = boxElem.find('label')
+    boxLabel
+      .attr('for', box.ID)
+      .text(box.Title);
+  });
+}
+
+$('#editable-radio').click(() => {
+  currentBoxID = '';
+  $('#editable-radio').prop('checked', true);
+  $('#title-input').prop('disabled', false).focus();
+});
 
 // 初始化 bootstrap 的 tooltip 效果
 $(function () {
@@ -230,20 +301,21 @@ function insertLink(link) {
 $('#submit-btn').click(event => {
   event.preventDefault();
 
-  currentTitle = $('#title-input').val().trim();
-  if (currentTitle.length == 0) {
+  currentBoxTitle = $('#title-input').val().trim();
+  if (currenBoxtTitle.length == 0) {
     insertErrorAlert('Error: 纸箱名称不可为空。');
     return;
   }
-  if (currentTitle == oldTitle) {
+  if (currentBoxTitle == oldTitle) {
     insertErrorAlert('纸箱名称没有变化。')
     return;
   }
-  id_form.append('title', currentTitle);
+  id_form.append('title', currentBoxTitle);
+  id_form.append('box-id', currentBoxID);
   
   ajaxPostWithSpinner(id_form, '/api/update-reco-box', 'submit', function() {
     if (this.status == 200) {
-      insertSuccessAlert(`OK. The box is set to: ${currentTitle}.`);
+      insertSuccessAlert(`OK. The box is set to: ${currentBoxTitle}.`);
       hideAllSections();
     } else {
       let errMsg = "Error: " + this.response.message;
