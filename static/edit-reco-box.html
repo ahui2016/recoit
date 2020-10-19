@@ -232,8 +232,10 @@ function setFormData(reco) {
         insertBoxes(boxes, null);
       } else {
         // 如果原本已经有纸箱，则将原本的纸箱移到列表顶部。
+        // 此时还要设置全局变量 oldTitle.
         boxes = moveBoxToTop(reco.Box, boxes);
-        $('#title-input').val(boxes[0].Title).prop('disabled', true);
+        oldTitle = boxes[0].Title;
+        $('#title-input').val(oldTitle).prop('disabled', true);
         insertBoxes(boxes, reco.Box);
       }
     } else {
@@ -302,7 +304,7 @@ $('#submit-btn').click(event => {
   event.preventDefault();
 
   currentBoxTitle = $('#title-input').val().trim();
-  if (currenBoxtTitle.length == 0) {
+  if (currentBoxTitle.length == 0) {
     insertErrorAlert('Error: 纸箱名称不可为空。');
     return;
   }
@@ -310,7 +312,7 @@ $('#submit-btn').click(event => {
     insertErrorAlert('纸箱名称没有变化。')
     return;
   }
-  id_form.append('title', currentBoxTitle);
+  id_form.append('box-title', currentBoxTitle);
   id_form.append('box-id', currentBoxID);
   
   ajaxPostWithSpinner(id_form, '/api/update-reco-box', 'submit', function() {

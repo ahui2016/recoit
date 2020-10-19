@@ -239,7 +239,7 @@ func updateHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// updateReco updates checksum, filesize, filename, message, collections,
+// updateReco updates checksum, filesize, filename, message, Box,
 // links, tags of a reco
 func updateReco(r *http.Request, fileContents []byte, reco *Reco) error {
 	if fileContents != nil {
@@ -251,7 +251,7 @@ func updateReco(r *http.Request, fileContents []byte, reco *Reco) error {
 	}
 	reco.Message = strings.TrimSpace(r.FormValue("description"))
 
-	// TODO: to update reco.Collections
+	// TODO: to update reco.Box
 
 	fileLinks := []byte(r.FormValue("file-links"))
 	if err := json.Unmarshal(fileLinks, &reco.Links); err != nil {
@@ -286,7 +286,7 @@ func getRecoHandler(w http.ResponseWriter, r *http.Request) {
 	if checkErr(w, err, 500) {
 		return
 	}
-	if checkErr(w, db.AccessCountUp(id, reco.AccessCount), 500) {
+	if checkErr(w, db.SetRecoAccessed(id, reco.AccessCount+1), 500) {
 		return
 	}
 	jsonResponse(w, reco, 200)
@@ -309,7 +309,7 @@ func getAllRecos(w http.ResponseWriter, r *http.Request) {
 
 func getAllBoxes(w http.ResponseWriter, r *http.Request) {
 	var boxes []Box
-	err := db.DB.AllByIndex("UpdatedAt", &boxes)
+	err := db.DB.AllByIndex("UpdatedAt", &boxes, storm.Reverse())
 	if checkErr(w, err, 500) {
 		return
 	}
@@ -494,10 +494,13 @@ func getBoxHandler(w http.ResponseWriter, r *http.Request) {
 
 func updateRecoBox(w http.ResponseWriter, r *http.Request) {
 	recoID := r.FormValue("id")
-	boxTitle := r.FormValue("title")
+	boxID := r.FormValue("box-id")
+	boxTitle := strings.TrimSpace(r.FormValue("box-title"))
+
 	if recoID == "" || boxTitle == "" {
 		jsonMessage(w, "id or box-title is empty", 400)
 		return
 	}
+
 	checkErr(w, db.UpdateRecoBox(boxID, boxTitle, recoID), 500)
 }

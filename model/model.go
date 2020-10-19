@@ -169,6 +169,7 @@ func (box *Box) Add(recoID string) bool {
 }
 
 // Remove 删除 reco-id, 如果实际上没有删除则返回 false.
+// 删除时不更新日期。
 func (box *Box) Remove(recoID string) bool {
 	i := util.StringIndex(box.RecoIDs, recoID)
 	if i < 0 {

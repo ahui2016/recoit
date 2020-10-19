@@ -249,13 +249,23 @@ func (db *DB) getFirstReco() (*Reco, error) {
 	return reco, err
 }
 
-// AccessCountUp .
-func (db *DB) AccessCountUp(id string, count int64) error {
+// SetRecoAccessed 设置 AccessedCount 和 AccessedAt.
+func (db *DB) SetRecoAccessed(id string, count int64) error {
 	reco := Reco{ID: id}
-	if err := db.DB.UpdateField(&reco, "AccessCount", count+1); err != nil {
+	if err := db.DB.UpdateField(&reco, "AccessCount", count); err != nil {
 		return err
 	}
 	return db.DB.UpdateField(&reco, "AccessedAt", util.TimeNow())
+}
+
+// SetRecoUpdated 更新更新日期。由于 AccessCount 很可能已经在别处更新，因此不用管它。
+func (db *DB) SetRecoUpdated(id string) error {
+	reco := Reco{ID: id}
+	return db.DB.UpdateField(&reco, "UpdatedAt", util.TimeNow())
+}
+func setRecoUpdated(tx storm.Node, id string) error {
+	reco := Reco{ID: id}
+	return tx.UpdateField(&reco, "UpdatedAt", util.TimeNow())
 }
 
 // DeleteReco .
@@ -438,14 +448,6 @@ func (db *DB) UpdateRecoBox(boxID, boxTitle, recoID string) error {
 		return err
 	}
 
-	var oldBox *Box
-	if reco.Box != "" {
-		oldBox, err = db.GetBoxByID(reco.Box)
-		if err != nil {
-			return err
-		}
-	}
-
 	// 如果有 boxID 则优先采用 boxID, 如果没有 boxID 则采用 boxTitle.
 	var box *Box
 	if boxID != "" {
@@ -460,9 +462,14 @@ func (db *DB) UpdateRecoBox(boxID, boxTitle, recoID string) error {
 		}
 	}
 
-	// 如果不存在该 box, 就新增一个。
+	// 如果不存在该 box, 就新建一个。
 	if err == storm.ErrNotFound {
 		box = model.NewBox(boxTitle)
+	}
+
+	// 到这里，我们获得一个 box, 如果该 box 恰好就是 reco 当前的 box, 就等于没有变化。
+	if box.ID == reco.Box {
+		return errors.New("Nothing to update")
 	}
 
 	// 到这里，box 必然存在，因此可向其添加 recoID.
@@ -471,24 +478,35 @@ func (db *DB) UpdateRecoBox(boxID, boxTitle, recoID string) error {
 		return nil
 	}
 
+	// 开始写入数据库。
 	tx, err := db.DB.Begin(true)
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
 
+	// 到这里, box 中已添加了新的 recoID.
 	if err := tx.Save(box); err != nil {
 		return err
 	}
 
-	// 尝试从 oldBox 中删除 recoID, 如果实际上没有删除就不用更新。
-	if oldBox.Remove(recoID) {
+	// 如果 reco 原本就在一个纸箱里，就还要从该纸箱里删除该 reco.
+	if reco.Box != "" {
+		oldBox, err := db.GetBoxByID(reco.Box)
+		if err != nil {
+			return err
+		}
+		oldBox.Remove(recoID)
 		if err := tx.Save(oldBox); err != nil {
 			return err
 		}
 	}
 
+	// 到这里，reco 里的 Box 需要更新。
 	if err := tx.UpdateField(&Reco{ID: recoID}, "Box", box.ID); err != nil {
+		return err
+	}
+	if err := setRecoUpdated(tx, recoID); err != nil {
 		return err
 	}
 
