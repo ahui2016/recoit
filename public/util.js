@@ -256,9 +256,7 @@ function moveBoxToTop(box_id, arr) {
   }
 
   // 特殊情况如上。以下是普通情况。
-  let top = arr[i];
-  let head = [top];
-  let tail = arr.splice(i, 1);
-  head.push(...tail);
-  return head;
+  let newBoxes = arr.splice(i, 1);
+  newBoxes.push(...arr);
+  return newBoxes;
 }

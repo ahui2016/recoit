@@ -474,10 +474,9 @@ func (db *DB) UpdateRecoBox(boxID, boxTitle, recoID string) error {
 
 	// 到这里，box 必然存在，因此可向其添加 recoID.
 	// 如果实际上没有添加 (recoID 本来就在该 box 里), 则不需要进一步处理。
-	box.Add(recoID)
-	// if !box.Add(recoID) {
-	// 	return nil
-	// }
+	if !box.Add(recoID) {
+		return nil
+	}
 
 	// 开始写入数据库。
 	tx, err := db.DB.Begin(true)
