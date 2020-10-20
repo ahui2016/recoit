@@ -249,8 +249,8 @@ function getUrlParam(param) {
 function moveBoxToTop(box_id, arr) {
   let i = arr.findIndex(box => box.ID == box_id);
   if (i < 0) return null;
-  if (i = 0) return arr;
-  if (i = 1) {
+  if (i == 0) return arr;
+  if (i == 1) {
     [arr[0], arr[1]] = [arr[1], arr[0]];
     return arr;
   }

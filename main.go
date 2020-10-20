@@ -293,7 +293,7 @@ func getRecoHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func getAllRecos(w http.ResponseWriter, r *http.Request) {
-	var all []Reco
+	var all []*Reco
 	err := db.DB.
 		Select(q.Eq("DeletedAt", ""), q.Gt("ID", "1")).
 		OrderBy("UpdatedAt").
@@ -303,6 +303,15 @@ func getAllRecos(w http.ResponseWriter, r *http.Request) {
 	}
 	for _, reco := range all {
 		reco.Checksum = ""
+
+		// 把 box.ID 转换为 box.Title 方便前端显示。
+		if reco.Box != "" {
+			box, err := db.GetBoxByID(reco.Box)
+			if checkErr(w, err, 500) {
+				return
+			}
+			reco.Box = box.Title
+		}
 	}
 	jsonResponse(w, all, 200)
 }
