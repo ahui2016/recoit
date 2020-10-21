@@ -246,17 +246,17 @@ function getUrlParam(param) {
 }
 
 // 将 arr 里的 box (ID == box_id) 移动到顶部，并保持其他元素的顺序。
-function moveBoxToTop(box_id, arr) {
-  let i = arr.findIndex(box => box.ID == box_id);
+function moveBoxToTop(box_id, tail) {
+  let i = tail.findIndex(box => box.ID == box_id);
   if (i < 0) return null;
-  if (i == 0) return arr;
+  if (i == 0) return tail;
   if (i == 1) {
-    [arr[0], arr[1]] = [arr[1], arr[0]];
-    return arr;
+    [tail[0], tail[1]] = [tail[1], tail[0]];
+    return tail;
   }
 
   // 特殊情况如上。以下是普通情况。
-  let newBoxes = arr.splice(i, 1);
-  newBoxes.push(...arr);
-  return newBoxes;
+  let head = tail.splice(i, 1);
+  head.push(...tail);
+  return head;
 }

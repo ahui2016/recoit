@@ -33,6 +33,27 @@
 #links-inputted img:hover {
   cursor: pointer;
 }
+
+#edit-tags {
+  color: black;
+}
+#edit-tags:hover {
+  color: blue;
+}
+
+#edit-box {
+  color: black;
+}
+#edit-box:hover {
+  color: blue;
+}
+
+#delete-file-btn {
+  color: black;
+}
+#delete-file-btn:hover {
+  color: red;
+}
     </style>
 
   </head>
@@ -42,7 +63,7 @@
 
       <!-- 顶端导航栏 -->
       <nav class="navbar navbar-light bg-light mt-1">
-          <span class="navbar-brand mb-0 h1">Edit File</span>
+          <span class="navbar-brand mb-0 h1">File</span>
           <div class="btn-toolbar" role="toolbar" aria-label="nav bar">
             <div class="btn-group mr-2" role="group">
               <a class="btn btn-outline-dark" href="/index" data-toggle="tooltip" title="Index">
@@ -125,6 +146,13 @@
               <a class="LinkAddress ml-1" target="_blank"></a>
             </li>
           </template>
+
+          <!-- 纸箱 (对，是在相关链接里面) -->
+          <li id="reco-box" class="d-flex align-items-center pl-1 py-1"
+              style="display: none;">
+            <img src="/public/icons/box.svg" alt="box icon">
+            <a id="reco-box-link" class="ml-1" target="_blank"></a>
+          </li>
         </ul>
       </div>
 
@@ -136,19 +164,19 @@
         <label class="custom-control-label" for="toggle-edit">Edit</label> . 
 
         <!-- 点击这里打开编辑标签的页面 -->
-        <a id="edit-tags" href="#" target="_blank" style="color: blue;">Tags</a>
+        <a id="edit-tags" href="#" target="_blank">Tags</a>
         <small>
           <sup><img src="/public/icons/box-arrow-up-right.svg" alt="↗"></sup>
         </small> .
 
         <!-- 点击这里打开编辑 Box(纸箱) 的页面 -->
-        <a id="edit-box" href="#" target="_blank" style="color: blue;">Box</a>
+        <a id="edit-box" href="#" target="_blank">Box</a>
         <small>
           <sup><img src="/public/icons/box-arrow-up-right.svg" alt="↗"></sup>
         </small> .
 
         <!-- 删除按钮，把该文件扔进垃圾桶 -->
-        <a id="delete-file-btn" href="#" style="color: red;">delete</a>
+        <a id="delete-file-btn" href="#">delete</a>
 
       </div>
 
@@ -371,6 +399,22 @@ function setReadonlyData(reco) {
   $('#description').text(reco.Message);
   recoTags.forEach(insertTag);
   recoLinks.forEach(insertLink);
+
+  // 通过 box.ID 获取 box.Title
+  if (reco.Box) {
+    let box_form = new FormData();
+    box_form.append('box-id', reco.Box);
+    ajaxPost(box_form, '/api/get-box', null, function(){
+      if (this.status == 200) {
+        $('#reco-box').show();
+        $('#reco-box-link')
+          .text(this.response.Title)
+          .attr('href', `/box?id=${this.response.ID}`);
+      } else {
+        insertErrorAlert(this.response.message);
+      }
+    });
+  }
 
   // 这是下载原图/原文件的按钮。点击该按钮时：
   // A. 如果在服务器里没有缓存，服务器会从 COS 下载回来。
