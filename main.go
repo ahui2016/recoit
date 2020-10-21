@@ -303,17 +303,23 @@ func getAllRecos(w http.ResponseWriter, r *http.Request) {
 	}
 	for _, reco := range all {
 		reco.Checksum = ""
-
-		// 把 box.ID 转换为 box.Title 方便前端显示。
-		if reco.Box != "" {
-			box, err := db.GetBoxByID(reco.Box)
-			if checkErr(w, err, 500) {
-				return
-			}
-			reco.Box = box.Title
+		if checkErr(w, boxShowTitle(reco), 500) {
+			return
 		}
 	}
 	jsonResponse(w, all, 200)
+}
+
+// 把 box.ID 转换为 box.Title 方便前端显示。
+func boxShowTitle(reco *Reco) error {
+	if reco.Box != "" {
+		box, err := db.GetBoxByID(reco.Box)
+		if err != nil {
+			return err
+		}
+		reco.Box = box.Title
+	}
+	return nil
 }
 
 func getAllBoxes(w http.ResponseWriter, r *http.Request) {
@@ -370,6 +376,9 @@ func getRecosByTag(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		reco.Checksum = ""
+		if checkErr(w, boxShowTitle(reco), 500) {
+			return
+		}
 		recos = append(recos, reco)
 	}
 	jsonResponse(w, recos, 200)

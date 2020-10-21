@@ -12,11 +12,17 @@
 
     <!-- Optional JavaScript -->
     <!-- jQuery first, then Popper.js, then Bootstrap JS -->
-    <script src="../public/jquery-3.5.1.min.js"></script>
+    <script src="/public/jquery-3.5.1.min.js"></script>
     <script src="/public/bootstrap.bundle.min.js"></script>
     <script src="/public/util.js"></script>
 
-    <style> </style>
+    <style>
+
+#file-tags .badge {
+  font-weight: normal;
+}
+
+    </style>
 
 </head>
 
@@ -105,10 +111,11 @@
                 type="text" id="title-input" class="form-control">
 
             <div class="input-group-append">
-              <button id="submit-btn" class="btn btn-outline-primary">OK</button>
+              <!-- 这里要加 .rounded-right，因为默认只有最后一个按钮才有圆边。 -->
+              <button id="submit-btn" class="btn btn-outline-primary rounded-right">Set</button>
               <button id="submit-spinner" class="btn btn-primary" style="display: none;" type="button" disabled>
                 <span class="spinner-border spinner-border-sm" role="status"></span>
-              </button>      
+              </button>
             </div>
           </div>
         </div>
