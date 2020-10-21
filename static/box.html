@@ -8,7 +8,7 @@
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="/public/bootstrap.min.css">
 
-    <title>Tag - Recoit</title>
+    <title>Box - Recoit</title>
 
     <!-- Optional JavaScript -->
     <!-- jQuery first, then Popper.js, then Bootstrap JS -->
@@ -24,7 +24,7 @@
   <body>
     <div class="container" style="max-width: 680px; min-width: 400px;">
       <nav class="navbar navbar-light bg-light mt-1 mb-3">
-        <span class="navbar-brand mb-0 h1"></span>
+        <span class="navbar-brand mb-0 h1">Box(纸箱)</span>
         <div class="btn-toolbar" role="toolbar" aria-label="nav bar">
           <div class="btn-group mr-2" role="group">
             <a class="btn btn-outline-dark" href="/index" data-toggle="tooltip" title="Index">
@@ -55,14 +55,6 @@
               <small class="FileSize"></small>
             </div>
             <p class="mb-1 text-truncate RecoMessage" style="color: lightgray;"></p>
-            <p class="RecoBoxWithIcon mb-1 d-none" style="color: lightslategray;">
-              <small>
-                <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-box" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                  <path fill-rule="evenodd" d="M8.186 1.113a.5.5 0 0 0-.372 0L1.846 3.5 8 5.961 14.154 3.5 8.186 1.113zM15 4.239l-6.5 2.6v7.922l6.5-2.6V4.24zM7.5 14.762V6.838L1 4.239v7.923l6.5 2.6zM7.443.184a1.5 1.5 0 0 1 1.114 0l7.129 2.852A.5.5 0 0 1 16 3.5v8.662a1 1 0 0 1-.629.928l-7.185 2.874a.5.5 0 0 1-.372 0L.63 13.09a1 1 0 0 1-.63-.928V3.5a.5.5 0 0 1 .314-.464L7.443.184z"/>
-                </svg>
-              </small>
-              <small class="RecoBox"></small>
-            </p>
             <div class="d-flex w-100 justify-content-between">
               <small class="mb-0 RecoTags"></small>
               <small class="SimpleDateTime" style="color: lightgray;"></small>
@@ -79,20 +71,23 @@ $(function () {
     $('[data-toggle="tooltip"]').tooltip()
 })
 
-let tagName = getUrlParam('name');
+let box_id = getUrlParam('id');
 let form = new FormData();
-form.append('tag', tagName);
+form.append('box-id', box_id);
 
 initData();
 
 function initData() {
-  $('.navbar-brand').text('#'+tagName);
 
-  ajaxPost(form, '/api/tag', null, function(){
+  ajaxPost(form, '/api/box', null, function(){
     if (this.status == 200) {
-      if (!this.response) {
-        insertErrorAlert(`No reco related to ${tagName}.`);
-        return;
+
+      // 如果该 box 是空的，则不请求 '/api/search-by-box'
+      if (!this.response.RecoID) {
+
+      } else {
+        // 如果 box 装有内容, 则进一步向后端发请求.
+        ajaxPost(form, '/api/search-by-box', null, function(){});
       }
 
       // 这里后端没给排序。
@@ -111,10 +106,6 @@ function initData() {
         item.find('.FileName').text(reco.FileName);
         item.find('.FileSize').text(fileSizeToString(reco.FileSize));
         item.find('.RecoMessage').text(reco.Message);
-        if (reco.Box) {
-          item.find('.RecoBoxWithIcon').removeClass('d-none');
-          item.find('.RecoBox').text(reco.Box);
-        }
         item.find('.RecoTags').text(addPrefix(reco.Tags, '#'));
         item.find('.SimpleDateTime')
           .text(monthAndDay(updatedAt))
