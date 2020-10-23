@@ -54,9 +54,12 @@ func main() {
 	http.HandleFunc("/api/download-file", checkLogin(downloadFile))
 
 	http.HandleFunc("/edit-reco-box", checkLogin(editRecoBoxPage))
-	http.HandleFunc("/api/get-box", checkLogin(getBoxHandler))
 	http.HandleFunc("/api/all-boxes", checkLogin(getAllBoxes))
 	http.HandleFunc("/api/update-reco-box", checkLogin(updateRecoBox))
+
+	http.HandleFunc("/box", checkLogin(boxPage))
+	http.HandleFunc("/api/get-box", checkLogin(getBoxHandler))
+	http.HandleFunc("/api/get-recos-by-box", checkLogin(getRecosByBox))
 
 	http.HandleFunc("/setup-cloud/ibm", setupIbmCosPage)
 	http.HandleFunc("/api/setup-ibm-cos", setupIbmCosHandler)
@@ -109,6 +112,10 @@ func editRecoBoxPage(w http.ResponseWriter, r *http.Request) {
 
 func tagPage(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, htmlFiles["tag"])
+}
+
+func boxPage(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprint(w, htmlFiles["box"])
 }
 
 func setupIbmCosPage(w http.ResponseWriter, r *http.Request) {
@@ -361,25 +368,31 @@ func createThumbHandler(w http.ResponseWriter, r *http.Request) {
 
 func getRecosByTag(w http.ResponseWriter, r *http.Request) {
 	tagName := r.FormValue("tag")
-	if tagName == "" {
-		jsonMessage(w, "tag's name is empty", 400)
-		return
-	}
-	tag, err := db.GetTagByName(tagName)
+	recos, err := db.GetRecosByTag(tagName)
 	if checkErr(w, err, 500) {
 		return
 	}
-	var recos []*Reco
-	for _, id := range tag.RecoIDs {
-		reco, err := db.GetRecoByID(id)
-		if checkErr(w, err, 500) {
-			return
-		}
+
+	// 在返回给前端之前进行一些处理（删除不需要的，添加需要的）。
+	for _, reco := range recos {
 		reco.Checksum = ""
 		if checkErr(w, boxShowTitle(reco), 500) {
 			return
 		}
-		recos = append(recos, reco)
+	}
+	jsonResponse(w, recos, 200)
+}
+
+func getRecosByBox(w http.ResponseWriter, r *http.Request) {
+	boxID := r.FormValue("box-id")
+	recos, err := db.GetRecosByBox(boxID)
+	if checkErr(w, err, 500) {
+		return
+	}
+
+	// 在返回给前端之前进行一些处理（删除不需要的，添加需要的）。
+	for _, reco := range recos {
+		reco.Checksum = ""
 	}
 	jsonResponse(w, recos, 200)
 }

@@ -242,6 +242,36 @@ func (db *DB) GetRecoByID(id string) (*Reco, error) {
 	return reco, err
 }
 
+// GetRecosByTag .
+func (db *DB) GetRecosByTag(tagName string) ([]*Reco, error) {
+	tag, err := db.GetTagByName(tagName)
+	if err != nil {
+		return nil, err
+	}
+	return db.getRecosByIDs(tag.RecoIDs)
+}
+
+// GetRecosByBox .
+func (db *DB) GetRecosByBox(boxID string) ([]*Reco, error) {
+	box, err := db.GetBoxByID(boxID)
+	if err != nil {
+		return nil, err
+	}
+	return db.getRecosByIDs(box.RecoIDs)
+}
+
+func (db *DB) getRecosByIDs(recoIDs []string) (recos []*Reco, err error) {
+	for _, id := range recoIDs {
+		var reco *Reco
+		reco, err = db.GetRecoByID(id)
+		if err != nil {
+			return
+		}
+		recos = append(recos, reco)
+	}
+	return
+}
+
 // getFisrtReco .
 func (db *DB) getFirstReco() (*Reco, error) {
 	reco := new(Reco)
@@ -405,6 +435,9 @@ func deleteTags(tx storm.Node, tagsToDelete []string, recoID string) error {
 
 // GetTagByName .
 func (db *DB) GetTagByName(name string) (*Tag, error) {
+	if name == "" {
+		return nil, errors.New("tag's name is empty")
+	}
 	tag := new(Tag)
 	err := db.DB.One("Name", name, tag)
 	return tag, err
@@ -412,6 +445,9 @@ func (db *DB) GetTagByName(name string) (*Tag, error) {
 
 // GetBoxByID .
 func (db *DB) GetBoxByID(boxID string) (*Box, error) {
+	if boxID == "" {
+		return nil, errors.New("box-id is empty")
+	}
 	box := new(Box)
 	err := db.DB.One("ID", boxID, box)
 	return box, err
