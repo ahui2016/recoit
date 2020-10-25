@@ -178,3 +178,13 @@ func (box *Box) Remove(recoID string) bool {
 	box.RecoIDs = util.DeleteFromSlice(box.RecoIDs, i)
 	return true
 }
+
+// Rename updates the title of the box.
+func (box *Box) Rename(title string) error {
+	if box.Title == title {
+		return errors.New("没有变化")
+	}
+	box.Title = title
+	box.UpdatedAt = util.TimeNow()
+	return nil
+}

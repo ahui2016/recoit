@@ -475,6 +475,18 @@ func (db *DB) GetBoxTitleByRecoID(id string) (string, error) {
 }
 */
 
+// RenameBox .
+func (db *DB) RenameBox(boxID, newTitle string) error {
+	box, err := db.GetBoxByID(boxID)
+	if err != nil {
+		return err
+	}
+	if err := box.Rename(newTitle); err != nil {
+		return err
+	}
+	return db.DB.Save(box)
+}
+
 // UpdateRecoBox 更新 reco 里的 Box, 该 box 可能原已存在，也可能在此时才新建。
 // 另外，如果 reco 原本已经属于另一个 box, 还要从那个 box 里剔除该 reco.
 // 如果有 boxID 则优先采用 boxID, 如果没有 boxID 则采用 boxTitle.

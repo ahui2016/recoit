@@ -125,30 +125,28 @@
 
     <script>
 
-$(function () {
-    $('[data-toggle="tooltip"]').tooltip()
-})
-
+let oldTitle = '';
 let box_id = getUrlParam('id');
-let form = new FormData();
-form.append('box-id', box_id);
 
 initData();
 
 function initData() {
+  let form = new FormData();
+  form.append('box-id', box_id);
 
   ajaxPost(form, '/api/get-box', null, function(){
     if (this.status == 200) {
       let box = this.response;
+      oldTitle = box.Title;
       $('#current-box-title').text(box.Title);
       $('#box-title').val(box.Title);
 
-      // 如果该纸箱是空的，则不用进一步请求纸箱内容。
-      if (!box.RecoIDs) {
-        insertInfoAlert('This box is empty.');
-      } else {
-        // 如果纸箱装有内容, 则进一步向后端发请求.
+      // 如果纸箱装有内容, 则进一步向后端发请求.
+      if (box.RecoIDs && box.RecoIDs.length > 0) {
         getRecosByBox();
+      } else {
+        // 如果该纸箱是空的，则不用进一步请求纸箱内容。
+        insertInfoAlert('This box is empty.');
       }
     } else {
       insertErrorAlert(this.response.message);
@@ -157,6 +155,9 @@ function initData() {
 }
 
 function getRecosByBox() {
+  let form = new FormData();
+  form.append('box-id', box_id);
+
   ajaxPost(form, '/api/get-recos-by-box', null, function(){
     let recos = this.response;
 
@@ -199,8 +200,35 @@ $('#rename-cancel-btn').click(event => {
 
 $('#rename-btn').click(event => {
   event.preventDefault();
-  form.append($('#box-title').val().trim());
+
+  let newTitle = $('#box-title').val().trim();
+  if (newTitle.length == 0) {
+    insertErrorAlert('纸箱名称不可为空。');
+    return
+  }
+  if (newTitle == oldTitle) {
+    insertErrorAlert('纸箱名称没有变化。');
+    return
+  }
+
+  let form = new FormData();
+  form.append('box-id', box_id);
+  form.append('box-title', newTitle);
+  ajaxPostWithSpinner(form, '/api/rename-box', 'rename', function(){
+    if (this.status == 200) {
+      $('#rename-form').hide();
+      $('#current-box').show();
+      $('#current-box').text(newTitle);
+      insertSuccessAlert('Rename Successfully.');
+    } else {
+      insertErrorAlert(this.response.message);
+    }
+  });
 });
+
+$(function () {
+    $('[data-toggle="tooltip"]').tooltip()
+})
 
     </script>
   </body>

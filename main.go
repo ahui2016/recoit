@@ -536,3 +536,15 @@ func updateRecoBox(w http.ResponseWriter, r *http.Request) {
 
 	checkErr(w, db.UpdateRecoBox(boxID, boxTitle, recoID), 500)
 }
+
+func renameBoxHandler(w http.ResponseWriter, r *http.Request) {
+	boxID := r.FormValue("box-id")
+	boxTitle := strings.TrimSpace(r.FormValue("box-title"))
+
+	if boxID == "" || boxTitle == "" {
+		jsonMessage(w, "box-id or box-title is empty", 400)
+		return
+	}
+
+	checkErr(w, db.RenameBox(boxID, boxTitle), 500)
+}

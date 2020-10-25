@@ -154,8 +154,6 @@
 
 // 初始化一些全局变量
 let id = getUrlParam('id');
-let id_form = new FormData();
-id_form.append('id', id);
 let recoTags = [], recoLinks = [];
 let box_id = null, oldTitle = '';
 let currentBoxID = '', currentBoxTitle = '';
@@ -163,6 +161,8 @@ let currentBoxID = '', currentBoxTitle = '';
 // 初始化页面内容，在该函数内主要初始化需要从服务器获取数据的内容。
 initData();
 function initData() {
+  let id_form = new FormData();
+  id_form.append('id', id);
 
   // 从服务器获取数据
   ajaxPost(id_form, '/api/reco', null, function(){
@@ -309,10 +309,13 @@ $('#submit-btn').click(event => {
     insertErrorAlert('纸箱名称没有变化。')
     return;
   }
-  id_form.append('box-title', currentBoxTitle);
-  id_form.append('box-id', currentBoxID);
+
+  let form = new FormData();
+  form.append('id', id);
+  form.append('box-title', currentBoxTitle);
+  form.append('box-id', currentBoxID);
   
-  ajaxPostWithSpinner(id_form, '/api/update-reco-box', 'submit', function() {
+  ajaxPostWithSpinner(form, '/api/update-reco-box', 'submit', function() {
     if (this.status == 200) {
       insertSuccessAlert(`OK. The box is set to: ${currentBoxTitle}.`);
       hideAllSections();
