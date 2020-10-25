@@ -86,6 +86,14 @@ function insertErrorAlert(errMsg, alertTmpl) {
   errAlert.insertAfter(alertTmpl);
 }
 
+// 插入普通提示
+function insertInfoAlert(msg) {
+  console.log(msg);
+  let errAlert = $('#alert-info-tmpl').contents().clone();
+  errAlert.find('.AlertMessage').text(msg);
+  errAlert.insertAfter('#alert-info-tmpl');
+}
+
 // 插入成功提示
 function insertSuccessAlert(msg) {
   console.log(msg);

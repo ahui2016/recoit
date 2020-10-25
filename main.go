@@ -60,6 +60,7 @@ func main() {
 	http.HandleFunc("/box", checkLogin(boxPage))
 	http.HandleFunc("/api/get-box", checkLogin(getBoxHandler))
 	http.HandleFunc("/api/get-recos-by-box", checkLogin(getRecosByBox))
+	http.HandleFunc("/api/rename-box", checkLogin(renameBoxHandler))
 
 	http.HandleFunc("/setup-cloud/ibm", setupIbmCosPage)
 	http.HandleFunc("/api/setup-ibm-cos", setupIbmCosHandler)

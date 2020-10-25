@@ -232,7 +232,7 @@ function setFormData(reco) {
         // 此时还要设置全局变量 oldTitle.
         boxes = moveBoxToTop(reco.Box, boxes);
         oldTitle = boxes[0].Title;
-        $('#title-input').val(oldTitle).prop('disabled', true);
+        $('#title-input').val(oldTitle).prop('readonly', true);
         insertBoxes(boxes, reco.Box);
       }
     } else {
@@ -259,7 +259,7 @@ function insertBoxes(boxes, box_id_checked) {
       .click(() => {
         boxInput.prop('checked', true);
         currentBoxID = box.ID;
-        $('#title-input').val(box.Title).prop('disabled', true);
+        $('#title-input').val(box.Title).prop('readonly', true);
       });
     
     // box 的单选框的描述
@@ -273,7 +273,7 @@ function insertBoxes(boxes, box_id_checked) {
 $('#editable-radio').click(() => {
   currentBoxID = '';
   $('#editable-radio').prop('checked', true);
-  $('#title-input').prop('disabled', false).focus();
+  $('#title-input').prop('readonly', false).focus();
 });
 
 // 初始化 bootstrap 的 tooltip 效果
