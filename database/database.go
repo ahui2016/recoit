@@ -487,10 +487,10 @@ func (db *DB) RenameBox(boxID, newTitle string) error {
 	return db.DB.Save(box)
 }
 
-// UpdateRecoBox 更新 reco 里的 Box, 该 box 可能原已存在，也可能在此时才新建。
+// ChangeBox 更换 reco 里的 Box, 更换后的 box 可能原已存在，也可能在此时才新建。
 // 另外，如果 reco 原本已经属于另一个 box, 还要从那个 box 里剔除该 reco.
 // 如果有 boxID 则优先采用 boxID, 如果没有 boxID 则采用 boxTitle.
-func (db *DB) UpdateRecoBox(boxID, boxTitle, recoID string) error {
+func (db *DB) ChangeBox(boxID, boxTitle, recoID string) error {
 	reco, err := db.GetRecoByID(recoID)
 	if err != nil {
 		return err
@@ -517,7 +517,7 @@ func (db *DB) UpdateRecoBox(boxID, boxTitle, recoID string) error {
 
 	// 到这里，我们获得一个 box, 如果该 box 恰好就是 reco 当前的 box, 就等于没有变化。
 	if box.ID == reco.Box {
-		return errors.New("Nothing to update")
+		return errors.New("纸箱无变化")
 	}
 
 	// 到这里，box 必然存在，因此可向其添加 recoID.

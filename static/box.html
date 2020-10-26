@@ -35,14 +35,6 @@
       <nav class="navbar navbar-light bg-light mt-1 mb-3">
         <span class="navbar-brand mb-0 h1">Box(纸箱)</span>
         <div class="btn-toolbar" role="toolbar" aria-label="nav bar">
-          <div class="btn-group mr-2" role="group">
-            <a class="btn btn-outline-dark" href="/index" data-toggle="tooltip" title="Index">
-              <img src="/public/icons/grid-3x3-gap.svg" alt="all" style="font-size:3rem;">
-            </a>
-            <a class="btn btn-outline-dark" href="/add-file" data-toggle="tooltip" title="add file">
-              <img src="/public/icons/file-earmark-plus.svg" alt="add" style="font-size:3rem;">
-            </a>
-          </div>
         </div>
       </nav>
 
@@ -98,19 +90,25 @@
         </div>
       </template>
 
+      <!-- 移除成员的表单 -->
+      <form id="remove-item-form"></form>
+
+      <!-- 成员列表 -->
       <div id="all-files" class="list-group">
         <template id="file-item-tmpl">
-          <a class="list-group-item list-group-item-action">
-            <div class="d-flex w-100 justify-content-between">
-              <h5 class="mb-1 text-truncate FileName"></h5>
-              <small class="FileSize"></small>
+          <div class="list-group-item list-group-item-action">
+            <div class="form-check text-right">
+              <input form="remove-item-form" name="to-be-remove"
+                     type="checkbox" class="form-check-input position-static">
             </div>
+            <h5 class="mb-1 text-break FileName"></h5>  
             <p class="mb-1 text-truncate RecoMessage" style="color: lightgray;"></p>
             <div class="d-flex w-100 justify-content-between">
               <small class="mb-0 RecoTags"></small>
-              <small class="SimpleDateTime" style="color: lightgray;"></small>
+              <small class="SimpleDateTime" 
+                     style="color: lightgray; cursor: crosshair;"></small>
             </div>
-          </a>  
+          </div>  
         </template>
       </div>
 
@@ -164,11 +162,10 @@ function getRecosByBox() {
     recos.forEach(reco => {
       let updatedAt = simpleDateTime(new Date(reco.UpdatedAt));
       let item = $('#file-item-tmpl').contents().clone();
-      item
-        .attr('title', reco.FileName)
-        .attr('href', `/edit-file?id=${reco.ID}`);
+      item.find('.form-check-input')
+        .attr('value', reco.ID)
+        .attr('id', `id-${reco.ID}`);
       item.find('.FileName').text(reco.FileName);
-      item.find('.FileSize').text(fileSizeToString(reco.FileSize));
       item.find('.RecoMessage').text(reco.Message);
       item.find('.RecoTags').text(addPrefix(reco.Tags, '#'));
       item.find('.SimpleDateTime')

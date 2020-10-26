@@ -8,7 +8,7 @@
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="/public/bootstrap.min.css">
 
-    <title>Edit Box - Recoit</title>
+    <title>Change Box - Recoit</title>
 
     <!-- Optional JavaScript -->
     <!-- jQuery first, then Popper.js, then Bootstrap JS -->
@@ -31,7 +31,7 @@
 
       <!-- 顶端导航栏 -->
       <nav class="navbar navbar-light bg-light mt-1 mb-3">
-          <span class="navbar-brand mb-0 h1">Update Reco Box</span>
+          <span class="navbar-brand mb-0 h1">Change Box</span>
       </nav>
 
       <!-- 只读区域，展示该文件的文件名、缩略图、标签等 -->
@@ -128,7 +128,7 @@
           <li class="list-group-item" id="editable-item">
             <div class="form-check">
               <input id="editable-radio" class="form-check-input" 
-                  type="radio" name="box-radio-input" value="editable-radio">
+                  type="radio" name="box-radio-input" value="">
               <label id="editable-label" class="form-check-label text-info" for="editable-radio">
                 【手动输入】
               </label>
@@ -138,7 +138,7 @@
           <template id="box-item-tmpl">
             <li class="list-group-item">
               <div class="form-check">
-                <input class="form-check-input" type="radio" name="box-radio-input" id="" value="">
+                <input class="form-check-input" type="radio" name="box-radio-input">
                 <label class="form-check-label" for=""></label>
               </div>
             </li>
@@ -156,7 +156,7 @@
 let id = getUrlParam('id');
 let recoTags = [], recoLinks = [];
 let box_id = null, oldTitle = '';
-let currentBoxID = '', currentBoxTitle = '';
+let currentBoxTitle = '';
 
 // 初始化页面内容，在该函数内主要初始化需要从服务器获取数据的内容。
 initData();
@@ -244,6 +244,7 @@ function setFormData(reco) {
 // 插入 box 到列表中，并选中 box_id_checked 的条目。
 function insertBoxes(boxes, box_id_checked) {
   boxes.forEach(box => {
+    let itemID = `id-${box.ID}`;
     let boxElem = $('#box-item-tmpl').contents().clone();
     boxElem.insertBefore('#box-item-tmpl');
 
@@ -251,28 +252,23 @@ function insertBoxes(boxes, box_id_checked) {
     let boxInput = boxElem.find('input');
     if (box.ID == box_id_checked) {
       boxInput.prop('checked', true);
-      currentBoxID = box.ID;
     }
     boxInput
-      .attr('id', box.ID)
+      .attr('id', itemID)
       .attr('value', box.ID)
       .click(() => {
-        boxInput.prop('checked', true);
-        currentBoxID = box.ID;
         $('#title-input').val(box.Title).prop('readonly', true);
       });
     
     // box 的单选框的描述
     let boxLabel = boxElem.find('label')
     boxLabel
-      .attr('for', box.ID)
+      .attr('for', itemID)
       .text(box.Title);
   });
 }
 
 $('#editable-radio').click(() => {
-  currentBoxID = '';
-  $('#editable-radio').prop('checked', true);
   $('#title-input').prop('readonly', false).focus();
 });
 
@@ -310,12 +306,13 @@ $('#submit-btn').click(event => {
     return;
   }
 
+  let currentBoxID = $('#the-form input[name=box-radio-input]:checked').val();
   let form = new FormData();
   form.append('id', id);
   form.append('box-title', currentBoxTitle);
   form.append('box-id', currentBoxID);
   
-  ajaxPostWithSpinner(form, '/api/update-reco-box', 'submit', function() {
+  ajaxPostWithSpinner(form, '/api/change-box', 'submit', function() {
     if (this.status == 200) {
       insertSuccessAlert(`OK. The box is set to: ${currentBoxTitle}.`);
       hideAllSections();

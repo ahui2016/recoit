@@ -53,9 +53,9 @@ func main() {
 	http.HandleFunc("/api/create-thumb", checkLogin(createThumbHandler))
 	http.HandleFunc("/api/download-file", checkLogin(downloadFile))
 
-	http.HandleFunc("/edit-reco-box", checkLogin(editRecoBoxPage))
+	http.HandleFunc("/change-box", checkLogin(changeBoxPage))
+	http.HandleFunc("/api/change-box", checkLogin(changeBox))
 	http.HandleFunc("/api/all-boxes", checkLogin(getAllBoxes))
-	http.HandleFunc("/api/update-reco-box", checkLogin(updateRecoBox))
 
 	http.HandleFunc("/box", checkLogin(boxPage))
 	http.HandleFunc("/api/get-box", checkLogin(getBoxHandler))
@@ -107,8 +107,8 @@ func editFilePage(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, htmlFiles["edit-file"])
 }
 
-func editRecoBoxPage(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprint(w, htmlFiles["edit-reco-box"])
+func changeBoxPage(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprint(w, htmlFiles["change-box"])
 }
 
 func tagPage(w http.ResponseWriter, r *http.Request) {
@@ -524,7 +524,7 @@ func getBoxHandler(w http.ResponseWriter, r *http.Request) {
 	jsonResponse(w, box, 200)
 }
 
-func updateRecoBox(w http.ResponseWriter, r *http.Request) {
+func changeBox(w http.ResponseWriter, r *http.Request) {
 	recoID := r.FormValue("id")
 	boxID := r.FormValue("box-id")
 	boxTitle := strings.TrimSpace(r.FormValue("box-title"))
@@ -534,7 +534,7 @@ func updateRecoBox(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	checkErr(w, db.UpdateRecoBox(boxID, boxTitle, recoID), 500)
+	checkErr(w, db.ChangeBox(boxID, boxTitle, recoID), 500)
 }
 
 func renameBoxHandler(w http.ResponseWriter, r *http.Request) {
