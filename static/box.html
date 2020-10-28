@@ -26,6 +26,24 @@
       color: blue;
       cursor: pointer;
     }
+
+    #list-icon-buttons {
+      padding-left: 1em;
+      color: green;
+    }
+    #list-icon-buttons svg {
+      cursor: pointer;
+    }
+    #list-icon-buttons svg:hover {
+      font-size: x-large;
+    }
+
+    .Square {
+      margin-left: -0.25em;
+    }
+    .CheckSquare {
+      margin-left: -0.25em;
+    }
     </style>
 
   </head>
@@ -90,23 +108,45 @@
         </div>
       </template>
 
-      <!-- 移除成员的表单 -->
-      <form id="remove-item-form"></form>
+      <!-- 列表操作按钮 -->
+      <div id="list-icon-buttons" class="d-flex w-100 justify-content-between align-items-center">
+        <div>
+          <svg id="select-all-btn" title="select all" data-toggle="tooltip"
+            width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-list-check" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path fill-rule="evenodd" d="M5 11.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5zM3.854 2.146a.5.5 0 0 1 0 .708l-1.5 1.5a.5.5 0 0 1-.708 0l-.5-.5a.5.5 0 1 1 .708-.708L2 3.293l1.146-1.147a.5.5 0 0 1 .708 0zm0 4a.5.5 0 0 1 0 .708l-1.5 1.5a.5.5 0 0 1-.708 0l-.5-.5a.5.5 0 1 1 .708-.708L2 7.293l1.146-1.147a.5.5 0 0 1 .708 0zm0 4a.5.5 0 0 1 0 .708l-1.5 1.5a.5.5 0 0 1-.708 0l-.5-.5a.5.5 0 0 1 .708-.708l.146.147 1.146-1.147a.5.5 0 0 1 .708 0z"/>
+          </svg>
+        </div>
+        <div>
+          <svg id="remove-btn" title="remove selected items" data-toggle="tooltip"
+            width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-box-arrow-up" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path fill-rule="evenodd" d="M3.5 6a.5.5 0 0 0-.5.5v8a.5.5 0 0 0 .5.5h9a.5.5 0 0 0 .5-.5v-8a.5.5 0 0 0-.5-.5h-2a.5.5 0 0 1 0-1h2A1.5 1.5 0 0 1 14 6.5v8a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 2 14.5v-8A1.5 1.5 0 0 1 3.5 5h2a.5.5 0 0 1 0 1h-2z"/>
+            <path fill-rule="evenodd" d="M7.646.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 1.707V10.5a.5.5 0 0 1-1 0V1.707L5.354 3.854a.5.5 0 1 1-.708-.708l3-3z"/>
+          </svg>
+          <svg id="move-btn" title="move to another box" data-toggle="tooltip"
+            width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-box-arrow-in-down" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path fill-rule="evenodd" d="M3.5 6a.5.5 0 0 0-.5.5v8a.5.5 0 0 0 .5.5h9a.5.5 0 0 0 .5-.5v-8a.5.5 0 0 0-.5-.5h-2a.5.5 0 0 1 0-1h2A1.5 1.5 0 0 1 14 6.5v8a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 2 14.5v-8A1.5 1.5 0 0 1 3.5 5h2a.5.5 0 0 1 0 1h-2z"/>
+            <path fill-rule="evenodd" d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/>
+          </svg>
+        </div>
+      </div>
 
       <!-- 成员列表 -->
       <div id="all-files" class="list-group">
         <template id="file-item-tmpl">
           <div class="list-group-item list-group-item-action">
-            <div class="form-check text-right">
-              <input form="remove-item-form" name="to-be-remove"
-                     type="checkbox" class="form-check-input position-static">
+            <div class="d-flex w-100 justify-content-between align-items-center">
+              <img class="Square" src="/public/icons/square.svg" alt="square icon">
+              <img class="CheckSquare" src="/public/icons/check-square.svg" alt="square icon" style="display: none;">
+              <small class="FileSize"></small>
             </div>
-            <h5 class="mb-1 text-break FileName"></h5>  
-            <p class="mb-1 text-truncate RecoMessage" style="color: lightgray;"></p>
-            <div class="d-flex w-100 justify-content-between">
-              <small class="mb-0 RecoTags"></small>
-              <small class="SimpleDateTime" 
-                     style="color: lightgray; cursor: crosshair;"></small>
+            <div style="margin-left: 1em;">
+              <p class="mb-1 text-truncate FileName" target="_blank"></p>
+              <p class="mb-1 text-truncate RecoMessage" style="color: lightgray;"></p>
+              <div class="d-flex w-100 justify-content-between small">
+                <span class="mb-0 RecoTags"></span>
+                <a class="SimpleDateTime" style="color: lightgray;"
+                   target="_blank"></a>
+              </div>  
             </div>
           </div>  
         </template>
@@ -117,6 +157,8 @@
     <script>
 
 let oldTitle = '';
+let all_items = new Set();
+let checked_items = new Set();
 let box_id = getUrlParam('id');
 
 initData();
@@ -160,16 +202,30 @@ function getRecosByBox() {
     });
 
     recos.forEach(reco => {
+      all_items.add(reco.ID);
       let updatedAt = simpleDateTime(new Date(reco.UpdatedAt));
       let item = $('#file-item-tmpl').contents().clone();
+      item.click(() => {
+        if (checked_items.has(reco.ID)) {
+          checked_items.delete(reco.ID);
+        } else {
+          checked_items.add(reco.ID);
+        }
+        item.find('.Square').toggle();
+        item.find('.CheckSquare').toggle();
+      });
       item.find('.form-check-input')
         .attr('value', reco.ID)
         .attr('id', `id-${reco.ID}`);
-      item.find('.FileName').text(reco.FileName);
+      item.find('.FileName')
+        .text(reco.FileName)
+        .attr('title', reco.FileName);
+      item.find('.FileSize').text(fileSizeToString(reco.FileSize));
       item.find('.RecoMessage').text(reco.Message);
       item.find('.RecoTags').text(addPrefix(reco.Tags, '#'));
       item.find('.SimpleDateTime')
         .text(monthAndDay(updatedAt))
+        .attr('href', `/file?id=${reco.ID}`)
         .attr('title', `Updated at: ${updatedAt}`);
       item.insertAfter('#file-item-tmpl');
     });
@@ -214,6 +270,21 @@ $('#rename-btn').click(event => {
       insertErrorAlert(this.response.message);
     }
   });
+});
+
+// 全选按钮
+$('#select-all-btn').click(() => {
+  // 如果尚未全选，则全选。
+  if (checked_items.size < all_items.size) {
+    $('.Square').hide();
+    $('.CheckSquare').show();
+    checked_items = new Set(all_items);
+  } else {
+    // 如果已经全选，则全部否选。
+    $('.Square').show();
+    $('.CheckSquare').hide();
+    checked_items.clear();
+  }
 });
 
 $(function () {

@@ -47,7 +47,7 @@
       <div id="all-files" class="list-group">
         <template id="file-item-tmpl">
           <a class="list-group-item list-group-item-action">
-            <div class="d-flex w-100 justify-content-between">
+            <div class="d-flex w-100 justify-content-between align-items-center">
               <h5 class="mb-1 text-truncate FileName"></h5>
               <small class="FileSize"></small>
             </div>
@@ -84,7 +84,7 @@ function initData() {
         let item = $('#file-item-tmpl').contents().clone();
         item
           .attr('title', reco.FileName)
-          .attr('href', `/edit-file?id=${reco.ID}`);
+          .attr('href', `/file?id=${reco.ID}`);
         item.find('.FileName').text(reco.FileName);
         item.find('.FileSize').text(fileSizeToString(reco.FileSize));
         item.find('.RecoMessage').text(reco.Message);

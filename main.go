@@ -46,7 +46,7 @@ func main() {
 	http.HandleFunc("/api/upload-file", checkLogin(uploadHandler))
 	http.HandleFunc("/api/checksum", checkLogin(checksumHandler))
 
-	http.HandleFunc("/edit-file", checkLogin(editFilePage))
+	http.HandleFunc("/file", checkLogin(editFilePage))
 	http.HandleFunc("/api/update-file", checkLogin(updateHandler))
 	http.HandleFunc("/api/reco", checkLogin(getRecoHandler))
 	http.HandleFunc("/api/delete-reco", checkLogin(deleteRecoHandler))
@@ -104,7 +104,7 @@ func addFilePage(w http.ResponseWriter, r *http.Request) {
 }
 
 func editFilePage(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprint(w, htmlFiles["edit-file"])
+	fmt.Fprint(w, htmlFiles["file"])
 }
 
 func changeBoxPage(w http.ResponseWriter, r *http.Request) {
