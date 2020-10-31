@@ -36,7 +36,7 @@ func checkLogin(fn http.HandlerFunc) http.HandlerFunc {
 				return
 			}
 			// 不是以 "/api/" 开头的都是页面。
-			fmt.Fprint(w, htmlFiles["login"])
+			fmt.Fprint(w, HTML["login"])
 			return
 		}
 		fn(w, r)

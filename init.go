@@ -43,7 +43,7 @@ var (
 
 var (
 	passwordTry = 0
-	htmlFiles   = make(map[string]string)
+	HTML        = make(map[string]string)
 	db          = new(database.DB)
 )
 
@@ -63,7 +63,7 @@ func init() {
 	cacheDir = filepath.Join(recoitDataDir, cacheFolderName)
 	cacheThumbDir = filepath.Join(recoitDataDir, cacheThumbFolderName)
 
-	fillHtmlFiles()
+	fillHTML()
 	mustMkdir(dbDefaultDir)
 	mustMkdir(tempDir)
 	mustMkdir(cacheDir)
@@ -91,8 +91,10 @@ func userHomeDir() string {
 	return homeDir
 }
 
-func fillHtmlFiles() {
-	filePaths, err := util.GetPathsByExt(staticFolder, ".html")
+// fillHTML 把读取 html 文件的内容，塞进 HTML (map[string]string)。
+// 目的是方便以字符串的形式把 html 文件直接喂给 http.ResponseWriter.
+func fillHTML() {
+	filePaths, err := util.FilesInDir(staticFolder, ".html")
 	if err != nil {
 		panic(err)
 	}
@@ -104,7 +106,7 @@ func fillHtmlFiles() {
 		if err != nil {
 			panic(err)
 		}
-		htmlFiles[name] = string(html)
+		HTML[name] = string(html)
 	}
 }
 

@@ -16,7 +16,7 @@ const MinLength = 3
 // RecoType 是一个枚举类型，用来表示 Reco 的类型。
 type RecoType string
 
-// File .
+// 各种 RecoType.
 const (
 	Others RecoType = ""
 	File   RecoType = "File"

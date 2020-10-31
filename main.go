@@ -88,7 +88,7 @@ func homePage(w http.ResponseWriter, r *http.Request) {
 	case "/":
 		fallthrough
 	case "/home":
-		// fmt.Fprint(w, htmlFiles["index"])
+		// fmt.Fprint(w, HTML["index"])
 		http.Redirect(w, r, "/index", 302)
 	default:
 		jsonMsg404(w)
@@ -96,43 +96,43 @@ func homePage(w http.ResponseWriter, r *http.Request) {
 }
 
 func indexPage(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprint(w, htmlFiles["index"])
+	fmt.Fprint(w, HTML["index"])
 }
 
 func addFilePage(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprint(w, htmlFiles["add-file"])
+	fmt.Fprint(w, HTML["add-file"])
 }
 
 func editFilePage(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprint(w, htmlFiles["file"])
+	fmt.Fprint(w, HTML["file"])
 }
 
 func changeBoxPage(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprint(w, htmlFiles["change-box"])
+	fmt.Fprint(w, HTML["change-box"])
 }
 
 func tagPage(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprint(w, htmlFiles["tag"])
+	fmt.Fprint(w, HTML["tag"])
 }
 
 func boxPage(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprint(w, htmlFiles["box"])
+	fmt.Fprint(w, HTML["box"])
 }
 
 func setupIbmCosPage(w http.ResponseWriter, r *http.Request) {
 	if db.GCM == nil {
-		fmt.Fprint(w, htmlFiles["login"])
+		fmt.Fprint(w, HTML["login"])
 		return
 	}
-	fmt.Fprint(w, htmlFiles["setup-ibm-cos"])
+	fmt.Fprint(w, HTML["setup-ibm-cos"])
 }
 
 func createAccountPage(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprint(w, htmlFiles["create-account"])
+	fmt.Fprint(w, HTML["create-account"])
 }
 
 func loginPage(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprint(w, htmlFiles["login"])
+	fmt.Fprint(w, HTML["login"])
 }
 
 func uploadHandler(w http.ResponseWriter, r *http.Request) {

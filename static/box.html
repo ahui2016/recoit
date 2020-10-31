@@ -28,14 +28,13 @@
     }
 
     #list-icon-buttons {
+      margin-bottom: 2px;
       padding-left: 1em;
       color: green;
     }
     #list-icon-buttons svg {
       cursor: pointer;
-    }
-    #list-icon-buttons svg:hover {
-      font-size: x-large;
+      font-size: larger;
     }
 
     .Square {
@@ -61,20 +60,20 @@
       <!--成功提示-->
       <template id="alert-success-tmpl">
         <div class="alert alert-success alert-dismissible fade show" role="alert">
-            <span class="AlertMessage"></span>
-            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-              <span aria-hidden="true">&times;</span>
-            </button>
+          <span class="AlertMessage"></span>
+          <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
         </div>
       </template>
 
       <!--错误提示-->
       <template id="alert-danger-tmpl">
         <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            <span class="AlertMessage"></span>
-            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-              <span aria-hidden="true">&times;</span>
-            </button>
+          <span class="AlertMessage"></span>
+          <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
         </div>
       </template>
       
@@ -103,10 +102,10 @@
       <!--普通提示-->
       <template id="alert-info-tmpl">
         <div class="alert alert-info alert-dismissible fade show" role="alert">
-            <span class="AlertMessage"></span>
-            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-              <span aria-hidden="true">&times;</span>
-            </button>
+          <span class="AlertMessage"></span>
+          <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
         </div>
       </template>
 
@@ -114,20 +113,20 @@
       <div id="list-icon-buttons" class="d-flex w-100 justify-content-between align-items-center">
         <div>
           <!-- 全选按钮 -->
-          <svg id="select-all-btn" title="select all" data-toggle="tooltip"
+          <svg id="select-all-btn" title="全选" data-toggle="tooltip"
             width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-list-check" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
             <path fill-rule="evenodd" d="M5 11.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5zM3.854 2.146a.5.5 0 0 1 0 .708l-1.5 1.5a.5.5 0 0 1-.708 0l-.5-.5a.5.5 0 1 1 .708-.708L2 3.293l1.146-1.147a.5.5 0 0 1 .708 0zm0 4a.5.5 0 0 1 0 .708l-1.5 1.5a.5.5 0 0 1-.708 0l-.5-.5a.5.5 0 1 1 .708-.708L2 7.293l1.146-1.147a.5.5 0 0 1 .708 0zm0 4a.5.5 0 0 1 0 .708l-1.5 1.5a.5.5 0 0 1-.708 0l-.5-.5a.5.5 0 0 1 .708-.708l.146.147 1.146-1.147a.5.5 0 0 1 .708 0z"/>
           </svg>
         </div>
         <div>
           <!-- 删除按钮 -->
-          <svg id="remove-btn" title="remove selected items" data-toggle="tooltip"
+          <svg id="remove-btn" title="从纸箱中移除" data-toggle="tooltip"
             width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-box-arrow-up" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
             <path fill-rule="evenodd" d="M3.5 6a.5.5 0 0 0-.5.5v8a.5.5 0 0 0 .5.5h9a.5.5 0 0 0 .5-.5v-8a.5.5 0 0 0-.5-.5h-2a.5.5 0 0 1 0-1h2A1.5 1.5 0 0 1 14 6.5v8a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 2 14.5v-8A1.5 1.5 0 0 1 3.5 5h2a.5.5 0 0 1 0 1h-2z"/>
             <path fill-rule="evenodd" d="M7.646.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 1.707V10.5a.5.5 0 0 1-1 0V1.707L5.354 3.854a.5.5 0 1 1-.708-.708l3-3z"/>
           </svg>
           <!-- 移动按钮 -->
-          <svg id="move-btn" title="move to another box" data-toggle="tooltip"
+          <svg id="move-btn" title="移至另一个纸箱" data-toggle="tooltip"
             width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-box-arrow-in-down" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
             <path fill-rule="evenodd" d="M3.5 6a.5.5 0 0 0-.5.5v8a.5.5 0 0 0 .5.5h9a.5.5 0 0 0 .5-.5v-8a.5.5 0 0 0-.5-.5h-2a.5.5 0 0 1 0-1h2A1.5 1.5 0 0 1 14 6.5v8a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 2 14.5v-8A1.5 1.5 0 0 1 3.5 5h2a.5.5 0 0 1 0 1h-2z"/>
             <path fill-rule="evenodd" d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/>

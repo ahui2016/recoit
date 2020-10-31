@@ -12,7 +12,6 @@ import (
 	"mime"
 	"os"
 	"path/filepath"
-	"sort"
 	"strconv"
 	"time"
 
@@ -46,23 +45,13 @@ func Base64Decode(s string) ([]byte, error) {
 	return base64.StdEncoding.DecodeString(s)
 }
 
-// NewFileScanner .
-func NewFileScanner(fullPath string) (*bufio.Scanner, *os.File, error) {
-	file, err := os.Open(fullPath)
-	if err != nil {
-		return nil, nil, err
-	}
-	return bufio.NewScanner(file), file, nil
-}
-
-// GetPathsByExt .
-func GetPathsByExt(dir, ext string) ([]string, error) {
+// FilesInDir .
+func FilesInDir(dir, ext string) ([]string, error) {
 	pattern := filepath.Join(dir, "*"+ext)
 	filePaths, err := filepath.Glob(pattern)
 	if err != nil {
 		return nil, err
 	}
-	sort.Strings(filePaths)
 	return filePaths, nil
 }
 

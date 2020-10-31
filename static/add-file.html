@@ -23,19 +23,21 @@
   <body>
     <div class="container" style="max-width: 680px; min-width: 400px;">
         <nav class="navbar navbar-light bg-light mt-1">
-            <span class="navbar-brand mb-0 h1">Add File</span>
-            <div class="btn-toolbar" role="toolbar" aria-label="nav bar">
-              <div class="btn-group mr-2" role="group">
-                <a class="btn btn-outline-dark" href="/index" data-toggle="tooltip" title="Index">
-                  <img src="/public/icons/grid-3x3-gap.svg" alt="all" style="font-size:3rem;">
-                </a>
-              </div>
-            </div>  
+          <span class="navbar-brand mb-0 h1">Add File</span>
+          <div class="btn-toolbar" role="toolbar" aria-label="nav bar">
+            <div class="btn-group mr-2" role="group">
+              <a class="btn btn-outline-dark" href="/index" data-toggle="tooltip" title="Index">
+                <img src="/public/icons/grid-3x3-gap.svg" alt="all" style="font-size:3rem;">
+              </a>
+            </div>
+          </div>  
         </nav>
 
         <form id="file-form" style="margin-top: 50px;" autocomplete="off">
-          <div class="form-group">
-            <input type="file" class="form-control-file" id="file-input">
+          
+          <div class="custom-file">
+            <input type="file" class="custom-file-input" id="file-input">
+            <label class="custom-file-label" id="file-input-label" for="file-input">Choose file</label>
           </div>
 
           <!--成功提示-->
@@ -47,10 +49,10 @@
           <!--错误提示-->
           <template id="alert-danger-tmpl">
             <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                <span class="AlertMessage"></span>
-                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                  <span aria-hidden="true">&times;</span>
-                </button>
+              <span class="AlertMessage"></span>
+              <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+              </button>
             </div>
           </template>
 
@@ -96,10 +98,6 @@
     <script>
     // 如果有些函数在这里找不到，那就是在 util.js 里。
 
-$(function () {
-    $('[data-toggle="tooltip"]').tooltip()
-})
-
 let newTags = [];
 let fileSha256;
 
@@ -110,6 +108,7 @@ $('#file-input').change(event => {
 
   // Chrome 取消选择文件也会触发 change 事件, Firefox 无此问题.
   if (!file) {
+    $('#file-input-label').text('Choose file')
     $('#hidden-fields').hide();
   } else {
     $('#hidden-fields').show();
@@ -119,6 +118,7 @@ $('#file-input').change(event => {
 
     $('#file-size').val(fileSizeToString(file.size));
     $('#file-name').val(file.name);
+    $('#file-input-label').text(file.name);
   }
   $('.alert-dismissible').alert('close');
 });
@@ -128,7 +128,6 @@ $('#tags-input').blur(() => {
     newTags = getNewTags();
     $('#tags-input').val(addPrefix(newTags, '#'));
 });
-
 
 // 检查文件的校验和，如无冲突则上传文件。
 function checkHashUpload(event) {
@@ -160,7 +159,7 @@ function uploadFile() {
 
   ajaxPostWithSpinner(form, '/api/upload-file', 'upload', function() {
     if (this.status == 200) {
-      let editURL = `/edit-file?id=${this.response.message}`;
+      let editURL = `/file?id=${this.response.message}`;
       showSuccessAlert(editURL);
       $('#hidden-fields').hide();
     } else {
@@ -175,6 +174,13 @@ function showSuccessAlert(msg) {
   $('#success-message').show();
   $('#success-message').find('a').attr('href', msg);
 }
+
+$(function () {
+  $('[data-toggle="tooltip"]').tooltip()
+})
+
+$('#file-input').focus();
+
     </script>
   </body>
 </html>
