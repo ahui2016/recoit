@@ -35,7 +35,7 @@
 
         <form id="file-form" style="margin-top: 50px;" autocomplete="off">
           
-          <div class="custom-file">
+          <div class="custom-file" style="margin-bottom: 50px;">
             <input type="file" class="custom-file-input" id="file-input">
             <label class="custom-file-label" id="file-input-label" for="file-input">Choose file</label>
           </div>
@@ -56,7 +56,7 @@
             </div>
           </template>
 
-          <div id="hidden-fields" style="display: none; margin-top: 50px;">
+          <div id="hidden-fields" style="display: none;">
             <div class="form-group row" id="thumbnail" style="display: none;">
               <label for="file-size" class="col-sm-2 col-form-label">Thumbnail</label>
               <div class="col-sm-10">
@@ -112,13 +112,13 @@ $('#file-input').change(event => {
     $('#hidden-fields').hide();
   } else {
     $('#hidden-fields').show();
+    $('#file-input-label').text(file.name);
 
     tryToDrawThumb(file, '#thumbnail');
     sha256Hex(file).then(hashHex => fileSha256 = hashHex);
 
     $('#file-size').val(fileSizeToString(file.size));
-    $('#file-name').val(file.name);
-    $('#file-input-label').text(file.name);
+    $('#file-name').val(file.name).focus();
   }
   $('.alert-dismissible').alert('close');
 });
@@ -140,9 +140,9 @@ function checkHashUpload(event) {
     if (this.status == 200) {
       uploadFile();
     } else {
-      let errMsg = "Error: Upload Failed. " + this.response.message;
+      let err = !this.response ? this.status : this.response.message;
+      let errMsg = "Error: Upload Failed. " + err;
       insertErrorAlert(errMsg);
-      $('#hidden-fields').hide();
     }
   });
 }
@@ -163,7 +163,8 @@ function uploadFile() {
       showSuccessAlert(editURL);
       $('#hidden-fields').hide();
     } else {
-      let errMsg = "Error: Upload Failed. " + this.response.message;
+      let err = !this.response ? this.status : this.response.message;
+      let errMsg = "Error: Upload Failed. " + err;
       insertErrorAlert(errMsg);
     }
   });

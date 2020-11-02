@@ -43,11 +43,13 @@ func main() {
 	http.HandleFunc("/api/tag", checkLogin(getRecosByTag))
 
 	http.HandleFunc("/add-file", checkLogin(addFilePage))
-	http.HandleFunc("/api/upload-file", checkLogin(uploadHandler))
+	http.HandleFunc("/api/upload-file", checkLogin(
+		setMaxBytes(uploadHandler)))
 	http.HandleFunc("/api/checksum", checkLogin(checksumHandler))
 
 	http.HandleFunc("/file", checkLogin(editFilePage))
-	http.HandleFunc("/api/update-file", checkLogin(updateHandler))
+	http.HandleFunc("/api/update-file", checkLogin(
+		setMaxBytes(updateHandler)))
 	http.HandleFunc("/api/reco", checkLogin(getRecoHandler))
 	http.HandleFunc("/api/delete-reco", checkLogin(deleteRecoHandler))
 	http.HandleFunc("/api/create-thumb", checkLogin(createThumbHandler))
@@ -137,7 +139,6 @@ func loginPage(w http.ResponseWriter, r *http.Request) {
 
 func uploadHandler(w http.ResponseWriter, r *http.Request) {
 
-	// 在 getFileContents 里更改了 r.Body
 	fileContents, err := getFileContents(w, r)
 	if checkErr(w, err, 400) {
 		return
@@ -174,10 +175,6 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func getFileContents(w http.ResponseWriter, r *http.Request) ([]byte, error) {
-
-	var maxBytes int64 = 1024 * 1024 * 3 // 3 MB
-	r.Body = http.MaxBytesReader(w, r.Body, maxBytes)
-
 	file, _, err := r.FormFile("file")
 	if err != nil {
 		return nil, err
@@ -199,7 +196,6 @@ func getFileContents(w http.ResponseWriter, r *http.Request) ([]byte, error) {
 
 func updateHandler(w http.ResponseWriter, r *http.Request) {
 
-	// 在 getFileContents 里更改了 r.Body
 	fileContents, err := getFileContents(w, r)
 	if err != nil && err != http.ErrMissingFile {
 		jsonMessage(w, err.Error(), 500)

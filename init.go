@@ -27,9 +27,10 @@ const (
 	thumbFileExt         = ".small"
 	staticFolder         = "static"
 	// maxAge                 = 60 * 60 * 24 * 30 // 30 days, for session
-	maxAge         = 60 * 30
-	secret         = "08-1303"
-	passwordMaxTry = 5
+	maxAge               = 60 * 30
+	passwordMaxTry       = 5
+	maxBytes       int64 = 1024 * 1024 * 3 // 3 MB, for http.MaxBytesReader
+
 )
 
 var (
