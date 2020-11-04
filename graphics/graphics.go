@@ -14,7 +14,6 @@ const (
 	thumbSize = 128
 	quality   = 85
 	longLimit = 900
-	SizeLimit = 500 * 1024 // 500KB
 )
 
 // ResizeLimit resizes the image if it's long side bigger than limit.

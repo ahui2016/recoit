@@ -3,57 +3,14 @@ package util
 import (
 	"bufio"
 	"crypto/rand"
-	"crypto/sha256"
-	"encoding/base64"
-	"encoding/hex"
-	"io"
 	"io/ioutil"
 	"math/big"
-	"mime"
 	"os"
-	"path/filepath"
 	"strconv"
 	"time"
 
-	"github.com/ahui2016/recoit/graphics"
+	"github.com/ahui2016/goutil"
 )
-
-const (
-	// ISO8601 需要根据服务器的具体时区来设定正确的时区
-	ISO8601 = "2006-01-02T15:04:05.999+08:00"
-)
-
-// NewID .
-func NewID() string {
-	var max int64 = 100_000_000
-	n, err := rand.Int(rand.Reader, big.NewInt(max))
-	if err != nil {
-		panic(err)
-	}
-	timestamp := time.Now().Unix()
-	idInt64 := timestamp*max + n.Int64()
-	return strconv.FormatInt(idInt64, 36)
-}
-
-// Base64Encode .
-func Base64Encode(data []byte) string {
-	return base64.StdEncoding.EncodeToString(data)
-}
-
-// Base64Decode .
-func Base64Decode(s string) ([]byte, error) {
-	return base64.StdEncoding.DecodeString(s)
-}
-
-// FilesInDir .
-func FilesInDir(dir, ext string) ([]string, error) {
-	pattern := filepath.Join(dir, "*"+ext)
-	filePaths, err := filepath.Glob(pattern)
-	if err != nil {
-		return nil, err
-	}
-	return filePaths, nil
-}
 
 // TimestampFilename .
 func TimestampFilename(ext string) string {
@@ -75,17 +32,6 @@ func DeleteFiles(filePaths []string) error {
 		}
 	}
 	return nil
-}
-
-// TimeNow .
-func TimeNow() string {
-	return time.Now().Format(ISO8601)
-}
-
-// Sha256Hex .
-func Sha256Hex(data []byte) string {
-	sum := sha256.Sum256(data)
-	return hex.EncodeToString(sum[:])
 }
 
 // HasString .
@@ -112,66 +58,13 @@ func DeleteFromSlice(slice []string, i int) []string {
 	return append(slice[:i], slice[i+1:]...)
 }
 
-// PathIsNotExist .
-func PathIsNotExist(name string) bool {
-	_, err := os.Lstat(name)
-	if os.IsNotExist(err) {
-		return true
-	}
-	if err != nil {
-		panic(err)
-	}
-	return false
-}
-
-// PathIsExist .
-func PathIsExist(name string) bool {
-	return !PathIsNotExist(name)
-}
-
-// CreateFile 会自动关闭 file.
-func CreateFile(filePath string, src io.Reader) error {
-	_, file, err := CreateReturnFile(filePath, src)
-	if err == nil {
-		file.Close()
-	}
-	return err
-}
-
-// CreateReturnFile 会返回 file, 要记得关闭资源。
-func CreateReturnFile(filePath string, src io.Reader) (int64, *os.File, error) {
-	f, err := os.OpenFile(filePath, os.O_RDWR|os.O_CREATE, 0600)
-	if err != nil {
-		return 0, nil, err
-	}
-	size, err := io.Copy(f, src)
-	if err != nil {
-		return 0, nil, err
-	}
-	return size, f, nil
-}
-
 // CreateThumb .
 func CreateThumb(imgPath, thumbPath string) error {
 	img, err := ioutil.ReadFile(imgPath)
 	if err != nil {
 		return err
 	}
-	return BytesToThumb(img, thumbPath)
-}
-
-// BytesToThumb .
-func BytesToThumb(img []byte, thumbPath string) error {
-	buf, err := graphics.Thumbnail(img)
-	if err != nil {
-		return err
-	}
-	return CreateFile(thumbPath, buf)
-}
-
-// TypeByFilename .
-func TypeByFilename(filename string) string {
-	return mime.TypeByExtension(filepath.Ext(filename))
+	return goutil.BytesToThumb(img, thumbPath)
 }
 
 // DifferentSlice 对比新旧 slice 的差异，并返回需要新增的项目与需要删除的项目。
@@ -212,7 +105,7 @@ func RandBool() bool {
 
 // RandomString .
 func RandomString() string {
-	return Base64Encode(RandomBytes())
+	return goutil.Base64Encode(RandomBytes())
 }
 
 // RandomBytes .

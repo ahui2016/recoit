@@ -98,6 +98,10 @@
     <script>
     // 如果有些函数在这里找不到，那就是在 util.js 里。
 
+$(function () {
+  $('[data-toggle="tooltip"]').tooltip()
+})
+
 let newTags = [];
 let fileSha256;
 
@@ -140,8 +144,7 @@ function checkHashUpload(event) {
     if (this.status == 200) {
       uploadFile();
     } else {
-      let err = !this.response ? this.status : this.response.message;
-      let errMsg = "Error: Upload Failed. " + err;
+      let errMsg = !this.response ? this.status : this.response.message;
       insertErrorAlert(errMsg);
     }
   });
@@ -153,18 +156,17 @@ function uploadFile() {
   let file = document.querySelector('#file-input').files[0];
   form.append('file', file);
   form.append('checksum', fileSha256);
-  form.append('file-name', $('#file-name').val());
+  form.append('file-name', $('#file-name').val().trim());
   form.append('file-size', file.size);
   form.append('file-tags', JSON.stringify(newTags));
 
   ajaxPostWithSpinner(form, '/api/upload-file', 'upload', function() {
     if (this.status == 200) {
-      let editURL = `/file?id=${this.response.message}`;
-      showSuccessAlert(editURL);
+      let fileURL = `/file?id=${this.response.message}`;
+      showSuccessAlert(fileURL);
       $('#hidden-fields').hide();
     } else {
-      let err = !this.response ? this.status : this.response.message;
-      let errMsg = "Error: Upload Failed. " + err;
+      let errMsg = !this.response ? this.status : this.response.message;
       insertErrorAlert(errMsg);
     }
   });
@@ -175,10 +177,6 @@ function showSuccessAlert(msg) {
   $('#success-message').show();
   $('#success-message').find('a').attr('href', msg);
 }
-
-$(function () {
-  $('[data-toggle="tooltip"]').tooltip()
-})
 
 $('#file-input').focus();
 

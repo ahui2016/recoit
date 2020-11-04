@@ -1,18 +1,16 @@
 package main
 
 import (
-	"encoding/json"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
 
+	"github.com/ahui2016/goutil"
 	"github.com/ahui2016/recoit/database"
 	"github.com/ahui2016/recoit/graphics"
 	"github.com/ahui2016/recoit/model"
-	"github.com/ahui2016/recoit/util"
 )
 
 const (
@@ -26,11 +24,17 @@ const (
 	recoFileExt          = ".reco"
 	thumbFileExt         = ".small"
 	staticFolder         = "static"
-	// maxAge                 = 60 * 60 * 24 * 30 // 30 days, for session
-	maxAge               = 60 * 30
 	passwordMaxTry       = 5
-	maxBytes       int64 = 1024 * 1024 * 3 // 3 MB, for http.MaxBytesReader
 
+	// 3 MB, for http.MaxBytesReader
+	maxBytes int64 = 1024 * 1024 * 3
+
+	// maxAge = 60 * 60 * 24 * 30
+	// 30 days, for session
+	maxAge = 60 * 30
+
+	// 500KB, 当一个图片小于 smallImageSize, 它就是小图片，小图片不需要生成缩略图。
+	smallImageSize = 500 * 1024
 )
 
 var (
@@ -65,22 +69,14 @@ func init() {
 	cacheThumbDir = filepath.Join(recoitDataDir, cacheThumbFolderName)
 
 	fillHTML()
-	mustMkdir(dbDefaultDir)
-	mustMkdir(tempDir)
-	mustMkdir(cacheDir)
-	mustMkdir(cacheThumbDir)
+	goutil.MustMkdir(dbDefaultDir)
+	goutil.MustMkdir(tempDir)
+	goutil.MustMkdir(cacheDir)
+	goutil.MustMkdir(cacheThumbDir)
 
 	// open the db here, close the db in main().
 	if err := db.Open(maxAge, dbPath, cosSettingsPath); err != nil {
 		panic(err)
-	}
-}
-
-func mustMkdir(name string) {
-	if util.PathIsNotExist(name) {
-		if err := os.Mkdir(name, 0600); err != nil {
-			panic(err)
-		}
 	}
 }
 
@@ -95,7 +91,7 @@ func userHomeDir() string {
 // fillHTML 把读取 html 文件的内容，塞进 HTML (map[string]string)。
 // 目的是方便以字符串的形式把 html 文件直接喂给 http.ResponseWriter.
 func fillHTML() {
-	filePaths, err := util.FilesInDir(staticFolder, ".html")
+	filePaths, err := goutil.GetFilesByExt(staticFolder, ".html")
 	if err != nil {
 		panic(err)
 	}
@@ -109,42 +105,6 @@ func fillHTML() {
 		}
 		HTML[name] = string(html)
 	}
-}
-
-func checkErr(w http.ResponseWriter, err error, code int) bool {
-	if err != nil {
-		log.Println(err)
-		jsonMessage(w, err.Error(), code)
-		return true
-	}
-	return false
-}
-
-func jsonMsgOK(w http.ResponseWriter) {
-	jsonMessage(w, "OK", 200)
-}
-
-func jsonMsg404(w http.ResponseWriter) {
-	jsonMessage(w, "Not Found", 404)
-}
-
-func jsonRequireLogin(w http.ResponseWriter) {
-	jsonMessage(w, "Require Login", http.StatusUnauthorized)
-}
-
-// jsonMessage 主要用于向前端返回出错消息。
-func jsonMessage(w http.ResponseWriter, message string, code int) {
-	msg := map[string]string{"message": message}
-	jsonResponse(w, msg, code)
-}
-
-// jsonResponse 要用于向前端返回有用数据。
-// 参考 https://stackoverflow.com/questions/59763852/can-you-return-json-in-golang-http-error
-func jsonResponse(w http.ResponseWriter, obj interface{}, code int) {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.Header().Set("X-Content-Type-Options", "nosniff")
-	w.WriteHeader(code)
-	json.NewEncoder(w).Encode(obj)
 }
 
 func tempFilePath(id string) string {
@@ -168,12 +128,12 @@ func writeCacheFile(file *Reco, fileContents []byte) error {
 	thumbPath := cacheThumbPath(file.ID)
 
 	// 当且只当是图片但不是 gif, 并且图片体积大于极限时，才压缩图片尺寸。
-	if file.FileSize > graphics.SizeLimit && file.IsImage() && file.IsNotGIF() {
+	if file.FileSize > smallImageSize && file.IsImage() && file.IsNotGIF() {
 		buf, err := graphics.ResizeLimit(fileContents)
 		if err != nil {
 			return err
 		}
-		if err := util.CreateFile(cachePath, buf); err != nil {
+		if err := goutil.CreateFile(cachePath, buf); err != nil {
 			return err
 		}
 	} else {
@@ -186,7 +146,7 @@ func writeCacheFile(file *Reco, fileContents []byte) error {
 
 	// 如果是图片则一律生成缩略图
 	if file.IsImage() {
-		err := util.BytesToThumb(fileContents, thumbPath)
+		err := goutil.BytesToThumb(fileContents, thumbPath)
 		if err != nil {
 			return err
 		}
@@ -212,7 +172,7 @@ func tempFileURL(name string) string {
 // checkIDEmpty checks if the ID is empty or not.
 func checkIDEmpty(w http.ResponseWriter, id string) bool {
 	if id == "" {
-		jsonMessage(w, "id is empty", 400)
+		goutil.JsonMessage(w, "id is empty", 400)
 		return true
 	}
 	return false
